@@ -136,45 +136,54 @@ export async function hasLikedComment(commentId: string) {
 // 点赞/取消点赞评论
 export async function toggleCommentLike(commentId: string) {
   const user = await requireAuth()
+  
+  console.log('toggleCommentLike called:', { commentId, userId: user.id })
 
-  const existingLike = await db.query.commentLikes.findFirst({
-    where: and(eq(commentLikes.userId, user.id), eq(commentLikes.commentId, commentId)),
-  })
-
-  if (existingLike) {
-    await db
-      .delete(commentLikes)
-      .where(and(eq(commentLikes.userId, user.id), eq(commentLikes.commentId, commentId)))
-
-    // 更新评论点赞数
-    const [countResult] = await db
-      .select({ count: count() })
-      .from(commentLikes)
-      .where(eq(commentLikes.commentId, commentId))
-
-    await db
-      .update(comments)
-      .set({ likesCount: countResult.count })
-      .where(eq(comments.id, commentId))
-
-    return { liked: false, likesCount: countResult.count }
-  } else {
-    await db.insert(commentLikes).values({
-      userId: user.id,
-      commentId,
+  try {
+    const existingLike = await db.query.commentLikes.findFirst({
+      where: and(eq(commentLikes.userId, user.id), eq(commentLikes.commentId, commentId)),
     })
 
-    // 更新评论点赞数
-    const [countResult] = await db
-      .select({ count: count() })
-      .from(commentLikes)
-      .where(eq(commentLikes.commentId, commentId))
+    if (existingLike) {
+      // 取消点赞
+      await db
+        .delete(commentLikes)
+        .where(and(eq(commentLikes.userId, user.id), eq(commentLikes.commentId, commentId)))
 
-    await db
-      .update(comments)
-      .set({ likesCount: countResult.count })
-      .where(eq(comments.id, commentId))
+      // 更新评论点赞数
+      const [countResult] = await db
+        .select({ count: count() })
+        .from(commentLikes)
+        .where(eq(commentLikes.commentId, commentId))
 
-    return { liked: true, likesCount: countResult.count }
+      await db
+        .update(comments)
+        .set({ likesCount: countResult.count })
+        .where(eq(comments.id, commentId))
+
+      return { liked: false, likesCount: countResult.count }
+    } else {
+      // 添加点赞
+      await db.insert(commentLikes).values({
+        userId: user.id,
+        commentId,
+      })
+
+      // 更新评论点赞数
+      const [countResult] = await db
+        .select({ count: count() })
+        .from(commentLikes)
+        .where(eq(commentLikes.commentId, commentId))
+
+      await db
+        .update(comments)
+        .set({ likesCount: countResult.count })
+        .where(eq(comments.id, commentId))
+
+      return { liked: true, likesCount: countResult.count }
+    }
+  } catch (error) {
+    console.error('toggleCommentLike error:', error)
+    throw error
   }
 }

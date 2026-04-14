@@ -34,11 +34,17 @@ export function CommentItem({ comment, currentUserId, depth = 0 }: CommentItemPr
         const result = await toggleCommentLike(comment.id)
         setIsLiked(result.liked)
         setLikesCount(result.likesCount)
+        toast.success(result.liked ? '点赞成功' : '取消点赞')
       } catch (error) {
-        if (error instanceof Error && error.message.includes('Unauthorized')) {
-          toast.error('请先登录后再点赞')
+        console.error('Comment like error:', error)
+        if (error instanceof Error) {
+          if (error.message.includes('Unauthorized')) {
+            toast.error('请先登录后再点赞')
+          } else {
+            toast.error(`点赞失败: ${error.message}`)
+          }
         } else {
-          toast.error('操作失败')
+          toast.error('点赞失败，请重试')
         }
       }
     })
