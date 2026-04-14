@@ -4,7 +4,7 @@ import { auth } from '@/lib/auth'
 import { getPostBySlug } from '@/lib/actions/posts'
 import { hasLikedPost } from '@/lib/actions/likes'
 import { hasBookmarkedPost } from '@/lib/actions/bookmarks'
-import { getCommentsByPostId } from '@/lib/actions/comments'
+import { getCommentsByPostId, getUserLikedCommentIds } from '@/lib/actions/comments'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -54,6 +54,8 @@ export default async function PostPage({ params }: PostPageProps) {
   // 获取当前用户是否点赞/收藏（如果已登录）
   let hasLiked = false
   let hasBookmarked = false
+  let likedCommentIds: string[] = []
+  
   if (session?.user) {
     try {
       hasLiked = await hasLikedPost(post.id)
@@ -64,6 +66,27 @@ export default async function PostPage({ params }: PostPageProps) {
       hasBookmarked = await hasBookmarkedPost(post.id)
     } catch {
       hasBookmarked = false
+    }
+    
+    // 获取用户点赞的评论ID列表
+    try {
+      // 收集所有评论ID（包括回复）
+      const allCommentIds: string[] = []
+      const collectIds = (comments: BlogComment[]) => {
+        comments.forEach((c) => {
+          allCommentIds.push(c.id)
+          if (c.replies?.length) {
+            collectIds(c.replies)
+          }
+        })
+      }
+      collectIds(comments)
+      
+      if (allCommentIds.length > 0) {
+        likedCommentIds = await getUserLikedCommentIds(allCommentIds)
+      }
+    } catch {
+      likedCommentIds = []
     }
   }
 
@@ -164,6 +187,7 @@ export default async function PostPage({ params }: PostPageProps) {
               comments={comments}
               currentUserId={session?.user?.id}
               commentsCount={post.commentsCount}
+              likedCommentIds={likedCommentIds}
             />
           </article>
         </div>

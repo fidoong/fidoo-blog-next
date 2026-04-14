@@ -12,9 +12,10 @@ interface CommentListProps {
   comments: BlogComment[]
   currentUserId?: string
   commentsCount: number
+  likedCommentIds?: string[]
 }
 
-export function CommentList({ postId, comments, currentUserId, commentsCount }: CommentListProps) {
+export function CommentList({ postId, comments, currentUserId, commentsCount, likedCommentIds = [] }: CommentListProps) {
   const [showForm, setShowForm] = useState(false)
 
   return (
@@ -53,6 +54,7 @@ export function CommentList({ postId, comments, currentUserId, commentsCount }: 
               key={comment.id}
               comment={comment}
               currentUserId={currentUserId}
+              likedCommentIds={likedCommentIds}
             />
           ))}
         </div>

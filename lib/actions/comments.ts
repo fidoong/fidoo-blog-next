@@ -133,6 +133,23 @@ export async function hasLikedComment(commentId: string) {
   return !!like
 }
 
+// 获取用户点赞的所有评论ID（批量查询）
+export async function getUserLikedCommentIds(commentIds: string[]) {
+  const user = await requireAuth()
+  
+  if (commentIds.length === 0) return []
+
+  const likes = await db.query.commentLikes.findMany({
+    where: and(
+      eq(commentLikes.userId, user.id),
+      // 使用 inArray 查询多个评论ID
+    ),
+    columns: { commentId: true },
+  })
+
+  return likes.map((like) => like.commentId).filter((id) => commentIds.includes(id))
+}
+
 // 点赞/取消点赞评论
 export async function toggleCommentLike(commentId: string) {
   const user = await requireAuth()

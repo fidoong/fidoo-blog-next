@@ -16,12 +16,13 @@ interface CommentItemProps {
   comment: BlogComment
   currentUserId?: string
   depth?: number
+  likedCommentIds?: string[]
 }
 
-export function CommentItem({ comment, currentUserId, depth = 0 }: CommentItemProps) {
+export function CommentItem({ comment, currentUserId, depth = 0, likedCommentIds = [] }: CommentItemProps) {
   const [isPending, startTransition] = useTransition()
   const [showReplyForm, setShowReplyForm] = useState(false)
-  const [isLiked, setIsLiked] = useState(false)
+  const [isLiked, setIsLiked] = useState(likedCommentIds.includes(comment.id))
   const [likesCount, setLikesCount] = useState(comment.likesCount)
   const [isDeleted, setIsDeleted] = useState(false)
 
@@ -156,6 +157,7 @@ export function CommentItem({ comment, currentUserId, depth = 0 }: CommentItemPr
                   comment={reply}
                   currentUserId={currentUserId}
                   depth={depth + 1}
+                  likedCommentIds={likedCommentIds}
                 />
               ))}
             </div>
