@@ -113,11 +113,53 @@ export const authConfig: NextAuthOptions = {
       }
       return session
     },
-    async jwt({ token, user }) {
-      if (user) {
-        token.sub = user.id
-        token.role = user.role
-        token.username = user.username
+    async jwt({ token, user, account }) {
+      if (user && account) {
+        // OAuth 登录：需要根据 email 查找或创建用户，获取 UUID
+        if (account.provider === 'github' || account.provider === 'google') {
+          try {
+            const dbUser = await db.query.users.findFirst({
+              where: eq(users.email, user.email!),
+            })
+            
+            if (dbUser) {
+              // 已存在用户，使用数据库 UUID
+              token.sub = dbUser.id
+              token.role = dbUser.role
+              token.username = dbUser.username
+            } else {
+              // 新用户，创建记录
+              const username = user.username || user.email!.split('@')[0]
+              // 确保用户名唯一
+              const existingUsername = await db.query.users.findFirst({
+                where: eq(users.username, username),
+              })
+              const finalUsername = existingUsername 
+                ? `${username}_${Date.now().toString(36)}` 
+                : username
+                
+              const [newUser] = await db.insert(users).values({
+                email: user.email!,
+                username: finalUsername,
+                name: user.name,
+                avatar: user.image,
+                role: 'USER',
+              }).returning()
+              
+              token.sub = newUser.id
+              token.role = newUser.role
+              token.username = newUser.username
+            }
+          } catch (error) {
+            console.error('OAuth JWT callback error:', error)
+            throw error
+          }
+        } else {
+          // Credentials 登录：直接使用 user.id（已是 UUID）
+          token.sub = user.id
+          token.role = user.role
+          token.username = user.username
+        }
       }
       return token
     },
