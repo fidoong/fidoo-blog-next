@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useEffect, useCallback } from 'react'
+import { useState, useTransition, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -46,6 +46,7 @@ export function WriteForm({ categories, allTags, user }: WriteFormProps) {
   const [showSettings, setShowSettings] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const [isDraftSaving, setIsDraftSaving] = useState(false)
+  const hasRestoredRef = useRef(false)
 
   const form = useForm<z.infer<typeof postFormSchema>>({
     resolver: zodResolver(postFormSchema),
@@ -61,20 +62,24 @@ export function WriteForm({ categories, allTags, user }: WriteFormProps) {
     },
   })
 
-  // 自动保存草稿到 localStorage
+  // 自动恢复草稿（只执行一次）
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
+    if (hasRestoredRef.current) return
+    
     const saved = localStorage.getItem('write-draft')
     if (saved) {
       try {
         const draft = JSON.parse(saved)
         form.reset(draft)
         setContent(draft.content || '')
+        hasRestoredRef.current = true
         toast.info('已恢复上次草稿')
       } catch {
         // ignore
       }
     }
-  }, [form])
+  }, [])
 
   // 自动保存
   useEffect(() => {
