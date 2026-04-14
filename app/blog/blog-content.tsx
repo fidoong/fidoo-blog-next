@@ -83,7 +83,7 @@ export function BlogContent({ category, categories }: BlogContentProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
       {/* Main Content */}
-      <div className="lg:col-span-3 space-y-6">
+      <div className="lg:col-span-3 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <h1 className="text-3xl font-bold">文章列表</h1>
@@ -107,7 +107,7 @@ export function BlogContent({ category, categories }: BlogContentProps) {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {posts.map((post) => (
               <PostCard key={post.id} post={post} />
             ))}
@@ -119,15 +119,15 @@ export function BlogContent({ category, categories }: BlogContentProps) {
             {hasMore && !isFetchingNext && (
               <div
                 ref={loadMoreRef}
-                className="h-20 flex items-center justify-center"
+                className="h-12 flex items-center justify-center"
               >
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               </div>
             )}
 
             {/* 已加载全部 */}
             {!hasMore && posts.length > 0 && (
-              <div className="py-8 text-center text-sm text-muted-foreground">
+              <div className="py-4 text-center text-sm text-muted-foreground">
                 已加载全部 {total} 篇文章
               </div>
             )}
