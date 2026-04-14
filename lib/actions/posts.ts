@@ -100,10 +100,43 @@ export async function getPosts({
   }
 }
 
-// 获取单篇文章
+// 获取单篇文章（通过 slug）
 export async function getPostBySlug(slug: string) {
   const post = await db.query.posts.findFirst({
     where: eq(posts.slug, slug),
+    with: {
+      author: {
+        columns: {
+          id: true,
+          username: true,
+          name: true,
+          avatar: true,
+          bio: true,
+          github: true,
+          twitter: true,
+        },
+      },
+      category: true,
+      tags: {
+        with: {
+          tag: true,
+        },
+      },
+    },
+  })
+
+  if (!post) return null
+
+  return {
+    ...post,
+    tags: post.tags.map((pt) => pt.tag),
+  }
+}
+
+// 获取单篇文章（通过 ID）
+export async function getPost(id: string) {
+  const post = await db.query.posts.findFirst({
+    where: eq(posts.id, id),
     with: {
       author: {
         columns: {
@@ -178,7 +211,7 @@ export async function updatePost(
   postId: string,
   data: z.infer<typeof postFormSchema>
 ) {
-  const user = await requireAuth()
+  await requireAuth()
 
   const existingPost = await db.query.posts.findFirst({
     where: eq(posts.id, postId),
@@ -237,7 +270,7 @@ export async function updatePost(
 
 // 删除文章
 export async function deletePost(postId: string) {
-  const user = await requireAuth()
+  await requireAuth()
 
   const existingPost = await db.query.posts.findFirst({
     where: eq(posts.id, postId),

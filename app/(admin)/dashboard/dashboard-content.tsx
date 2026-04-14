@@ -55,7 +55,7 @@ export async function DashboardContent() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">仪表盘</h1>
-        <Link href="/posts/new">
+        <Link href="/write">
           <Button>
             <FileText className="mr-2 h-4 w-4" />
             写文章
@@ -140,7 +140,7 @@ export async function DashboardContent() {
                 >
                   <div>
                     <Link
-                      href={`/posts/${post.id}/edit`}
+                      href={`/posts/edit/${post.id}`}
                       className="font-medium hover:underline"
                     >
                       {post.title}
@@ -150,7 +150,7 @@ export async function DashboardContent() {
                       {post.published ? '已发布' : '草稿'}
                     </p>
                   </div>
-                  <Link href={`/posts/${post.id}/edit`}>
+                  <Link href={`/posts/edit/${post.id}`}>
                     <Button variant="ghost" size="sm">编辑</Button>
                   </Link>
                 </div>

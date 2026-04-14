@@ -1,6 +1,5 @@
 import { Suspense } from 'react'
 import { PostsContent } from './posts-content'
-import { Card, CardContent } from '@/components/ui/card'
 
 export default function PostsPage() {
   return (

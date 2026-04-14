@@ -34,7 +34,7 @@ export async function PostsContent() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">文章管理</h1>
-        <Link href="/posts/new">
+        <Link href="/write">
           <Button>
             <Plus className="mr-2 h-4 w-4" />
             新建文章
@@ -59,7 +59,7 @@ export async function PostsContent() {
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8">
                   还没有文章，
-                  <Link href="/posts/new" className="text-primary hover:underline">
+                  <Link href="/write" className="text-primary hover:underline">
                     开始创作
                   </Link>
                 </TableCell>
@@ -88,7 +88,7 @@ export async function PostsContent() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Link href={`/posts/${post.id}/edit`}>
+                      <Link href={`/posts/edit/${post.id}`}>
                         <Button variant="ghost" size="icon">
                           <Edit2 className="h-4 w-4" />
                         </Button>

@@ -24,14 +24,17 @@ export async function auth() {
   try {
     const headersList = await headers()
     const cookiesList = await cookies()
-    const req = {
+    
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const req: any = {
       headers: Object.fromEntries(headersList),
       cookies: Object.fromEntries(
         cookiesList.getAll().map(c => [c.name, c.value])
       ),
-    } as any
+    }
     
-    const res = { getHeader: () => {}, setHeader: () => {} } as any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const res: any = { getHeader: () => {}, setHeader: () => {} }
     
     const session = await getServerSession(req, res, authConfig)
     return session

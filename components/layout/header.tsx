@@ -44,7 +44,7 @@ export function Header() {
         redirect: true 
       })
       toast.success('已成功退出登录')
-    } catch (error) {
+    } catch {
       toast.error('退出登录失败，请重试')
       setIsLoggingOut(false)
       setShowLogoutDialog(false)
@@ -92,7 +92,7 @@ export function Header() {
 
             {/* Write Button - 所有登录用户可见 */}
             {session?.user && (
-              <Link href="/posts/new">
+              <Link href="/write">
                 <Button 
                   variant="default" 
                   size="sm"
@@ -135,7 +135,7 @@ export function Header() {
                     <User className="mr-2 h-4 w-4" />
                     个人主页
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push('/posts/new')}>
+                  <DropdownMenuItem onClick={() => router.push('/write')}>
                     <PenLine className="mr-2 h-4 w-4" />
                     写文章
                   </DropdownMenuItem>
