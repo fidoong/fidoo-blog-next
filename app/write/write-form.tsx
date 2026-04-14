@@ -136,8 +136,8 @@ export function WriteForm({ categories, allTags, user }: WriteFormProps) {
 
   return (
     <div className="flex flex-col h-screen bg-background">
-      {/* 顶部导航栏 - 更紧凑 */}
-      <header className="flex-none h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center justify-between px-4 lg:px-6">
+      {/* 顶部导航栏 */}
+      <header className="flex-none h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center justify-between px-4 lg:px-6 relative z-50">
         <div className="flex items-center gap-3">
           <Link
             href="/"
@@ -228,10 +228,10 @@ export function WriteForm({ categories, allTags, user }: WriteFormProps) {
           </div>
         </main>
 
-        {/* 右侧设置面板 - 更窄，默认显示 */}
+        {/* 右侧设置面板 */}
         <aside
           className={cn(
-            'fixed inset-y-0 right-0 z-50 w-80 bg-background border-l shadow-xl transform transition-transform duration-300 lg:static lg:transform-none lg:shadow-none lg:w-72 xl:w-80',
+            'fixed inset-y-0 right-0 z-40 w-80 bg-background border-l shadow-xl transform transition-transform duration-300 lg:static lg:transform-none lg:shadow-none lg:z-auto lg:w-72 xl:w-80',
             showSettings ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
           )}
         >
@@ -403,7 +403,7 @@ export function WriteForm({ categories, allTags, user }: WriteFormProps) {
         {/* 移动端遮罩 */}
         {showSettings && (
           <div
-            className="fixed inset-0 bg-black/20 z-40 lg:hidden"
+            className="fixed inset-0 bg-black/20 z-30 lg:hidden"
             onClick={() => setShowSettings(false)}
           />
         )}
