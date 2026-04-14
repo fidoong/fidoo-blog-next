@@ -199,9 +199,9 @@ export function WriteForm({ categories, allTags, user }: WriteFormProps) {
       {/* 主体内容 */}
       <div className="flex-1 flex overflow-hidden">
         {/* 左侧编辑区 - 占满剩余空间 */}
-        <main className="flex-1 flex flex-col min-w-0">
+        <main className="flex-1 flex flex-col min-w-0 isolate">
           {/* 标题和元信息 */}
-          <div className="flex-none px-6 lg:px-10 py-4 border-b bg-muted/20">
+          <div className="flex-none px-6 lg:px-10 py-4 border-b bg-muted/20 relative z-0">
             <Input
               placeholder="输入文章标题..."
               className="border-0 bg-transparent text-2xl lg:text-3xl font-bold placeholder:text-muted-foreground/30 focus-visible:ring-0 px-0 h-auto py-1"
