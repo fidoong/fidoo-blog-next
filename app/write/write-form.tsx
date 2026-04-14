@@ -23,7 +23,6 @@ import {
   Settings,
   ImageIcon,
   Hash,
-  FileText,
   Sparkles,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -193,44 +192,44 @@ export function WriteForm({ categories, allTags, user }: WriteFormProps) {
       </header>
 
       {/* 主体内容 */}
-      <div className="flex-1 flex">
+      <div className="flex-1 flex overflow-hidden">
         {/* 左侧编辑区 */}
-        <main className="flex-1 flex flex-col">
-          <div className="flex-1 max-w-3xl mx-auto w-full px-4 py-8 lg:px-8">
-            {/* 标题输入 */}
-            <div className="mb-6">
-              <Input
-                placeholder="输入文章标题..."
-                className="border-0 bg-transparent text-3xl font-bold placeholder:text-muted-foreground/50 focus-visible:ring-0 px-0 h-auto"
-                {...form.register('title')}
-              />
-              {form.formState.errors.title && (
-                <p className="text-sm text-destructive mt-2">
-                  {form.formState.errors.title.message}
-                </p>
-              )}
-            </div>
-
-            {/* 摘要输入 */}
-            <div className="mb-6">
-              <Textarea
-                placeholder="添加文章摘要（可选，用于列表展示）..."
-                className="border-0 bg-transparent resize-none placeholder:text-muted-foreground/50 focus-visible:ring-0 px-0 min-h-[60px]"
-                {...form.register('excerpt')}
-              />
-            </div>
-
-            {/* 正文编辑器 */}
-            <div className="flex-1">
-              <div className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                正文内容
+        <main className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto">
+            <div className="max-w-4xl mx-auto w-full px-4 py-6 lg:px-8">
+              {/* 标题输入 */}
+              <div className="mb-4">
+                <Input
+                  placeholder="输入文章标题..."
+                  className="border-0 bg-transparent text-4xl font-bold placeholder:text-muted-foreground/40 focus-visible:ring-0 px-0 h-auto py-2"
+                  {...form.register('title')}
+                />
+                {form.formState.errors.title && (
+                  <p className="text-sm text-destructive mt-2">
+                    {form.formState.errors.title.message}
+                  </p>
+                )}
               </div>
-              <MarkdownEditor
-                initialValue={content}
-                onChange={setContent}
-                height="calc(100vh - 380px)"
-              />
+
+              {/* 摘要输入 */}
+              <div className="mb-6">
+                <Textarea
+                  placeholder="添加文章摘要（可选，用于列表展示）..."
+                  className="border-0 bg-transparent resize-none placeholder:text-muted-foreground/40 focus-visible:ring-0 px-0 min-h-[50px] text-base text-muted-foreground"
+                  {...form.register('excerpt')}
+                />
+              </div>
+
+              {/* 正文编辑器 - 占满剩余空间 */}
+              <div className="min-h-[600px]">
+                <MarkdownEditor
+                  initialValue={content}
+                  onChange={setContent}
+                />
+              </div>
+              
+              {/* 底部留白 */}
+              <div className="h-20" />
             </div>
           </div>
         </main>

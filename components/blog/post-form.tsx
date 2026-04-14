@@ -264,7 +264,6 @@ export function PostForm({ post, categories, allTags }: PostFormProps) {
             <MarkdownEditor
               initialValue={content}
               onChange={setContent}
-              height="calc(100vh - 500px)"
             />
           </div>
         </div>
