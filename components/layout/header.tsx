@@ -90,7 +90,7 @@ export function Header() {
               <span className="sr-only">搜索</span>
             </Button>
 
-            {/* Write Button - 对已登录用户显示，无权限时提示 */}
+            {/* Write Button - 所有登录用户可见 */}
             {session?.user && (
               <Link href="/posts/new">
                 <Button 
@@ -139,12 +139,10 @@ export function Header() {
                     <PenLine className="mr-2 h-4 w-4" />
                     写文章
                   </DropdownMenuItem>
-                  {['AUTHOR', 'MODERATOR', 'ADMIN'].includes(session.user.role) && (
-                    <DropdownMenuItem onClick={() => router.push('/dashboard')}>
-                      <LayoutDashboard className="mr-2 h-4 w-4" />
-                      后台管理
-                    </DropdownMenuItem>
-                  )}
+                  <DropdownMenuItem onClick={() => router.push('/dashboard')}>
+                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                    我的文章
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => router.push('/settings')}>
                     <Settings className="mr-2 h-4 w-4" />
                     设置

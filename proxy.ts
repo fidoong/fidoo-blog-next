@@ -26,8 +26,9 @@ export default async function proxy(request: Request) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  if (isAdminRoute && (!userRole || !['AUTHOR', 'MODERATOR', 'ADMIN'].includes(userRole))) {
-    return NextResponse.redirect(new URL('/', request.url))
+  // /admin 路径只需要登录即可访问（所有用户都可以创作）
+  if (isAdminRoute && !isLoggedIn) {
+    return NextResponse.redirect(new URL('/login', request.url))
   }
 
   return NextResponse.next()

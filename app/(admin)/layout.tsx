@@ -13,10 +13,7 @@ export default async function AdminLayout({
     redirect('/login')
   }
 
-  if (!['AUTHOR', 'MODERATOR', 'ADMIN'].includes(session.user.role)) {
-    redirect('/unauthorized')
-  }
-
+  // 所有登录用户都可以访问创作功能
   return (
     <div className="flex min-h-[calc(100vh-3.5rem)]">
       <AdminSidebar user={session.user} />
