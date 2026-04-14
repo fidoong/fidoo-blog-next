@@ -14,7 +14,7 @@ export default async function AdminLayout({
   }
 
   if (!['AUTHOR', 'MODERATOR', 'ADMIN'].includes(session.user.role)) {
-    redirect('/')
+    redirect('/unauthorized')
   }
 
   return (

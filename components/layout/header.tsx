@@ -90,12 +90,24 @@ export function Header() {
               <span className="sr-only">搜索</span>
             </Button>
 
-            {/* Write Button */}
-            {session?.user && ['AUTHOR', 'MODERATOR', 'ADMIN'].includes(session.user.role) && (
+            {/* Write Button - 对已登录用户显示，无权限时提示 */}
+            {session?.user && (
               <Link href="/posts/new">
-                <Button variant="ghost" size="sm">
+                <Button 
+                  variant="default" 
+                  size="sm"
+                  className="hidden sm:flex bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-sm"
+                >
                   <PenLine className="mr-2 h-4 w-4" />
                   写文章
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  className="sm:hidden"
+                >
+                  <PenLine className="h-5 w-5" />
+                  <span className="sr-only">写文章</span>
                 </Button>
               </Link>
             )}
@@ -122,6 +134,10 @@ export function Header() {
                   <DropdownMenuItem onClick={() => router.push(`/u/${session.user.username}`)}>
                     <User className="mr-2 h-4 w-4" />
                     个人主页
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/posts/new')}>
+                    <PenLine className="mr-2 h-4 w-4" />
+                    写文章
                   </DropdownMenuItem>
                   {['AUTHOR', 'MODERATOR', 'ADMIN'].includes(session.user.role) && (
                     <DropdownMenuItem onClick={() => router.push('/dashboard')}>
