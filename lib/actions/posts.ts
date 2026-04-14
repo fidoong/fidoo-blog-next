@@ -2,12 +2,17 @@
 
 import { revalidatePath } from 'next/cache'
 import { db } from '@/lib/db'
-import { posts, postsToTags } from '@/lib/db/schema'
+import { posts, postsToTags, tags } from '@/lib/db/schema'
 import { requireAuth, requireResourceAccess } from '@/lib/auth/server-permissions'
 import { postFormSchema } from '@/types/forms'
 import { eq, and, desc, ilike, count } from 'drizzle-orm'
-import { tags } from '@/lib/db/schema'
 import { z } from 'zod'
+import {
+  transformPostWithRelations,
+  transformPostSummary,
+} from '@/types/transformers'
+import type { PostWithRelations, PostSummary, Post } from '@/types/models'
+import type { Tag } from '@/types/models'
 
 // 获取文章列表
 export async function getPosts({
@@ -26,7 +31,7 @@ export async function getPosts({
   published?: boolean
   authorId?: string
   includeDrafts?: boolean
-}) {
+}): Promise<{ posts: PostSummary[]; total: number; totalPages: number; page: number }> {
   const offset = (page - 1) * limit
 
   const query = db.query.posts.findMany({
@@ -74,12 +79,6 @@ export async function getPosts({
 
   const postsList = await query
 
-  // 转换标签格式
-  const formattedPosts = postsList.map((post) => ({
-    ...post,
-    tags: post.tags.map((pt) => pt.tag),
-  }))
-
   // 获取总数
   const [totalResult] = await db
     .select({ count: count() })
@@ -94,7 +93,7 @@ export async function getPosts({
     )
 
   return {
-    posts: formattedPosts,
+    posts: postsList.map(transformPostSummary),
     total: totalResult.count,
     totalPages: Math.ceil(totalResult.count / limit),
     page,
@@ -102,14 +101,14 @@ export async function getPosts({
 }
 
 // 获取标签下的文章
-export async function getPostsByTagSlug(tagSlug: string, limit = 20) {
+export async function getPostsByTagSlug(tagSlug: string, limit = 20): Promise<{ posts: PostSummary[]; total: number; tag: Tag }> {
   // 先获取标签
   const tag = await db.query.tags.findFirst({
     where: eq(tags.slug, tagSlug),
   })
 
   if (!tag) {
-    return { posts: [], total: 0 }
+    return { posts: [], total: 0, tag: null as unknown as Tag }
   }
 
   // 获取关联的文章ID
@@ -127,6 +126,11 @@ export async function getPostsByTagSlug(tagSlug: string, limit = 20) {
             },
           },
           category: true,
+          tags: {
+            with: {
+              tag: true,
+            },
+          },
         },
       },
     },
@@ -134,10 +138,9 @@ export async function getPostsByTagSlug(tagSlug: string, limit = 20) {
     limit,
   })
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const postsList: any[] = postTags.map((pt) => ({
+  const postsList = postTags.map((pt) => ({
     ...pt.post,
-    tags: [], // 简化处理，不在列表页显示标签
+    tags: ((pt.post as any).tags || []).map((t: any) => t.tag),
   }))
 
   // 获取总数
@@ -147,14 +150,14 @@ export async function getPostsByTagSlug(tagSlug: string, limit = 20) {
     .where(eq(postsToTags.tagId, tag.id))
 
   return {
-    posts: postsList,
+    posts: postsList.map(transformPostSummary),
     total: countResult.count,
     tag,
   }
 }
 
 // 获取单篇文章（通过 slug）
-export async function getPostBySlug(slug: string) {
+export async function getPostBySlug(slug: string): Promise<PostWithRelations | null> {
   const post = await db.query.posts.findFirst({
     where: eq(posts.slug, slug),
     with: {
@@ -180,14 +183,11 @@ export async function getPostBySlug(slug: string) {
 
   if (!post) return null
 
-  return {
-    ...post,
-    tags: post.tags.map((pt) => pt.tag),
-  }
+  return transformPostWithRelations(post)
 }
 
 // 增加文章浏览量
-export async function incrementPostViews(slug: string) {
+export async function incrementPostViews(slug: string): Promise<{ views: number } | null> {
   const post = await db.query.posts.findFirst({
     where: eq(posts.slug, slug),
     columns: { id: true, views: true },
@@ -205,7 +205,7 @@ export async function incrementPostViews(slug: string) {
 }
 
 // 获取单篇文章（通过 ID）
-export async function getPost(id: string) {
+export async function getPost(id: string): Promise<PostWithRelations | null> {
   const post = await db.query.posts.findFirst({
     where: eq(posts.id, id),
     with: {
@@ -231,14 +231,11 @@ export async function getPost(id: string) {
 
   if (!post) return null
 
-  return {
-    ...post,
-    tags: post.tags.map((pt) => pt.tag),
-  }
+  return transformPostWithRelations(post)
 }
 
 // 创建文章
-export async function createPost(data: z.infer<typeof postFormSchema>) {
+export async function createPost(data: z.infer<typeof postFormSchema>): Promise<Post> {
   const user = await requireAuth()
   const validated = postFormSchema.parse(data)
 
@@ -281,7 +278,7 @@ export async function createPost(data: z.infer<typeof postFormSchema>) {
 export async function updatePost(
   postId: string,
   data: z.infer<typeof postFormSchema>
-) {
+): Promise<Post> {
   await requireAuth()
 
   const existingPost = await db.query.posts.findFirst({
@@ -340,7 +337,7 @@ export async function updatePost(
 }
 
 // 删除文章
-export async function deletePost(postId: string) {
+export async function deletePost(postId: string): Promise<{ success: boolean }> {
   await requireAuth()
 
   const existingPost = await db.query.posts.findFirst({

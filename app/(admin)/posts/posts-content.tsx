@@ -15,15 +15,19 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Plus, Edit2, Trash2 } from 'lucide-react'
 import { deletePost } from '@/lib/actions/posts'
+import { transformAdminPostListItem } from '@/types/transformers'
+import type { AdminPostListItem } from '@/types/models'
 
-async function getUserPosts(userId: string) {
-  return db.query.posts.findMany({
+async function getUserPosts(userId: string): Promise<AdminPostListItem[]> {
+  const rawPosts = await db.query.posts.findMany({
     where: eq(posts.authorId, userId),
     orderBy: desc(posts.createdAt),
     with: {
       category: true,
     },
   })
+
+  return rawPosts.map(transformAdminPostListItem)
 }
 
 export async function PostsContent() {
@@ -76,7 +80,7 @@ export async function PostsContent() {
                       {post.title}
                     </Link>
                   </TableCell>
-                  <TableCell>{(post.category as { name?: string })?.name ?? '-'}</TableCell>
+                  <TableCell>{post.category.name ?? '-'}</TableCell>
                   <TableCell>
                     <Badge variant={post.published ? 'default' : 'secondary'}>
                       {post.published ? '已发布' : '草稿'}

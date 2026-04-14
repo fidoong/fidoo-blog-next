@@ -84,12 +84,12 @@ export default async function TagPage({ params }: TagPageProps) {
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
                           <div className="flex items-center gap-2">
                             <Avatar className="h-5 w-5">
-                              <AvatarImage src={(post.author as { avatar?: string })?.avatar || ''} />
+                              <AvatarImage src={post.author.avatar || ''} />
                               <AvatarFallback className="text-xs">
-                                {(post.author as { name?: string })?.name?.[0] || 'U'}
+                                {post.author.name?.[0] || 'U'}
                               </AvatarFallback>
                             </Avatar>
-                            <span>{(post.author as { name?: string })?.name || (post.author as { username?: string })?.username}</span>
+                            <span>{post.author.name || post.author.username}</span>
                           </div>
                           <span className="flex items-center gap-1">
                             <Calendar className="h-4 w-4" />

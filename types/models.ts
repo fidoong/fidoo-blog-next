@@ -1,6 +1,31 @@
 import { TimestampFields, PaginationParams, FilterParams, SortParams } from './index'
 
 // ============================================
+// 基础关系类型
+// ============================================
+
+/**
+ * 文章作者信息（公开字段）
+ */
+export interface PostAuthor {
+  id: string
+  username: string
+  name: string | null
+  avatar: string | null
+  bio: string | null
+}
+
+/**
+ * 文章分类信息
+ */
+export interface PostCategory {
+  id: string
+  name: string
+  slug: string
+  description: string | null
+}
+
+// ============================================
 // 用户模型
 // ============================================
 
@@ -33,6 +58,9 @@ export interface PublicUser {
 // 文章模型
 // ============================================
 
+/**
+ * 基础文章类型（数据库原始结构）
+ */
 export interface Post extends TimestampFields {
   id: string
   slug: string
@@ -48,15 +76,21 @@ export interface Post extends TimestampFields {
   readingTime: number
   publishedAt: Date | null
   authorId: string
-  author: PublicUser
   categoryId: string
-  category: Category
+}
+
+/**
+ * 带完整关系的文章（用于详情页、编辑页）
+ */
+export interface PostWithRelations extends Omit<Post, 'authorId' | 'categoryId'> {
+  author: PostAuthor
+  category: PostCategory
   tags: Tag[]
 }
 
-// 列表展示用（精简字段）
-export type PostWithRelations = Post
-
+/**
+ * 文章摘要（用于列表页）
+ */
 export interface PostSummary {
   id: string
   slug: string
@@ -71,30 +105,48 @@ export interface PostSummary {
   readingTime: number
   createdAt: Date
   publishedAt: Date | null
-  author: PublicUser
-  category: Category
+  author: PostAuthor
+  category: PostCategory
   tags: Tag[]
+}
+
+/**
+ * 管理后台文章列表项
+ */
+export interface AdminPostListItem {
+  id: string
+  title: string
+  slug: string
+  published: boolean
+  views: number
+  likesCount: number
+  commentsCount: number
+  createdAt: Date
+  category: PostCategory
 }
 
 // ============================================
 // 分类与标签
 // ============================================
 
-export interface Category extends Partial<TimestampFields> {
+export interface Category {
   id: string
   name: string
   slug: string
   description: string | null
   icon: string | null
   sortOrder: number | null
+  createdAt?: Date
+  updatedAt?: Date
   postCount?: number
 }
 
-export interface Tag extends TimestampFields {
+export interface Tag {
   id: string
   name: string
   slug: string
   description: string | null
+  createdAt: Date
   postCount?: number
 }
 
@@ -106,14 +158,17 @@ export interface Comment extends TimestampFields {
   id: string
   content: string
   authorId: string
-  author: PublicUser
   postId: string
   parentId: string | null
   likesCount: number
-  replies: Comment[]
-  _count?: {
-    replies: number
-  }
+}
+
+/**
+ * 带作者信息的评论（用于展示）
+ */
+export interface CommentWithAuthor extends Omit<Comment, 'authorId'> {
+  author: PostAuthor
+  replies: CommentWithAuthor[]
 }
 
 // ============================================
@@ -137,6 +192,19 @@ export interface Follow {
   followerId: string
   followingId: string
   createdAt: Date
+}
+
+// ============================================
+// 分页结果类型
+// ============================================
+
+export interface PaginatedResult<T> {
+  data: T[]
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+  hasMore: boolean
 }
 
 // ============================================

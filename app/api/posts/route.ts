@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { posts } from '@/lib/db/schema'
 import { and, eq, desc, ilike, count } from 'drizzle-orm'
+import { transformPostSummary } from '@/types/transformers'
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
@@ -48,12 +49,6 @@ export async function GET(request: NextRequest) {
       offset,
     })
 
-    // 转换标签格式
-    const formattedPosts = postsList.map((post) => ({
-      ...post,
-      tags: post.tags.map((pt) => pt.tag),
-    }))
-
     // 获取总数
     const [totalResult] = await db
       .select({ count: count() })
@@ -67,7 +62,7 @@ export async function GET(request: NextRequest) {
       )
 
     return NextResponse.json({
-      posts: formattedPosts,
+      posts: postsList.map(transformPostSummary),
       total: totalResult.count,
       totalPages: Math.ceil(totalResult.count / limit),
       page,

@@ -5,31 +5,22 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Calendar, Eye, Heart } from 'lucide-react'
-import type { PostWithRelations } from '@/types/models'
+import type { PostSummary } from '@/types/models'
 
 interface PostCardProps {
-  post: PostWithRelations
+  post: PostSummary
 }
 
 export function PostCard({ post }: PostCardProps) {
-  const author = post.author as {
-    id?: string
-    username?: string
-    name?: string
-    avatar?: string
-  }
-
-  const category = post.category as { name?: string } | null
-
   return (
     <Card className="overflow-hidden transition-shadow hover:shadow-sm">
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0 space-y-1.5">
             <div className="flex items-center gap-2 flex-wrap">
-              {category?.name && (
+              {post.category?.name && (
                 <Badge variant="secondary" className="text-xs px-2 py-0.5">
-                  {category.name}
+                  {post.category.name}
                 </Badge>
               )}
               <span className="text-xs text-muted-foreground">
@@ -53,15 +44,15 @@ export function PostCard({ post }: PostCardProps) {
             <div className="flex items-center gap-3 pt-1 flex-wrap">
               <div className="flex items-center gap-1.5">
                 <Avatar className="h-5 w-5">
-                  <AvatarImage src={author?.avatar || ''} />
+                  <AvatarImage src={post.author.avatar || ''} />
                   <AvatarFallback className="text-[10px]">
-                    {author?.name?.[0] ||
-                      author?.username?.[0] ||
+                    {post.author.name?.[0] ||
+                      post.author.username?.[0] ||
                       'U'}
                   </AvatarFallback>
                 </Avatar>
                 <span className="text-xs text-muted-foreground">
-                  {author?.name || author?.username}
+                  {post.author.name || post.author.username}
                 </span>
               </div>
               <span className="text-xs text-muted-foreground flex items-center gap-1">

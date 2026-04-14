@@ -7,9 +7,10 @@ import { requireAuth } from '@/lib/auth/server-permissions'
 import { commentFormSchema } from '@/types/forms'
 import { eq, and, desc, count } from 'drizzle-orm'
 import { z } from 'zod'
+import type { BlogComment } from '@/types/comments'
 
 // 获取文章的评论列表
-export async function getCommentsByPostId(postId: string) {
+export async function getCommentsByPostId(postId: string): Promise<BlogComment[]> {
   const commentsList = await db.query.comments.findMany({
     where: eq(comments.postId, postId),
     with: {
@@ -26,20 +27,32 @@ export async function getCommentsByPostId(postId: string) {
   })
 
   // 构建评论树结构
-  const commentMap = new Map()
-  const rootComments: typeof commentsList = []
+  const commentMap = new Map<string, BlogComment>()
+  const rootComments: BlogComment[] = []
 
   // 首先将所有评论放入 map
   commentsList.forEach((comment) => {
-    commentMap.set(comment.id, { ...comment, replies: [] })
+    const blogComment: BlogComment = {
+      id: comment.id,
+      content: comment.content,
+      authorId: comment.authorId,
+      postId: comment.postId,
+      parentId: comment.parentId,
+      likesCount: comment.likesCount,
+      createdAt: comment.createdAt,
+      author: comment.author as BlogComment['author'],
+      replies: [],
+    }
+    commentMap.set(comment.id, blogComment)
   })
 
   // 然后构建层级关系
   commentsList.forEach((comment) => {
-    const commentWithReplies = commentMap.get(comment.id)
+    const commentWithReplies = commentMap.get(comment.id)!
     if (comment.parentId) {
       const parent = commentMap.get(comment.parentId)
       if (parent) {
+        parent.replies = parent.replies || []
         parent.replies.push(commentWithReplies)
       }
     } else {
@@ -54,7 +67,7 @@ export async function getCommentsByPostId(postId: string) {
 export async function createComment(
   postId: string,
   data: z.infer<typeof commentFormSchema>
-) {
+): Promise<BlogComment> {
   const user = await requireAuth()
   const validated = commentFormSchema.parse(data)
 
@@ -67,8 +80,7 @@ export async function createComment(
       parentId: validated.parentId || null,
     })
     .returning()
-  
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   const comment = (result as any[])[0]
 
   // 更新文章评论数
@@ -84,11 +96,20 @@ export async function createComment(
 
   revalidatePath(`/blog/${postId}`)
 
-  return comment
+  return {
+    ...comment,
+    author: {
+      id: user.id,
+      username: user.username || '',
+      name: user.name || null,
+      avatar: user.image || null,
+    },
+    replies: [],
+  }
 }
 
 // 删除评论
-export async function deleteComment(commentId: string, postId: string) {
+export async function deleteComment(commentId: string, postId: string): Promise<{ success: boolean }> {
   const user = await requireAuth()
 
   const comment = await db.query.comments.findFirst({
@@ -123,7 +144,7 @@ export async function deleteComment(commentId: string, postId: string) {
 }
 
 // 检查用户是否点赞了评论
-export async function hasLikedComment(commentId: string) {
+export async function hasLikedComment(commentId: string): Promise<boolean> {
   const user = await requireAuth()
 
   const like = await db.query.commentLikes.findFirst({
@@ -134,16 +155,13 @@ export async function hasLikedComment(commentId: string) {
 }
 
 // 获取用户点赞的所有评论ID（批量查询）
-export async function getUserLikedCommentIds(commentIds: string[]) {
+export async function getUserLikedCommentIds(commentIds: string[]): Promise<string[]> {
   const user = await requireAuth()
-  
+
   if (commentIds.length === 0) return []
 
   const likes = await db.query.commentLikes.findMany({
-    where: and(
-      eq(commentLikes.userId, user.id),
-      // 使用 inArray 查询多个评论ID
-    ),
+    where: eq(commentLikes.userId, user.id),
     columns: { commentId: true },
   })
 
@@ -151,9 +169,9 @@ export async function getUserLikedCommentIds(commentIds: string[]) {
 }
 
 // 点赞/取消点赞评论
-export async function toggleCommentLike(commentId: string) {
+export async function toggleCommentLike(commentId: string): Promise<{ liked: boolean; likesCount: number }> {
   const user = await requireAuth()
-  
+
   console.log('toggleCommentLike called:', { commentId, userId: user.id })
 
   try {

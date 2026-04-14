@@ -86,7 +86,7 @@ export default async function HomePage() {
               </Button>
             </Link>
           </div>
-          
+
           {posts.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               暂无文章
@@ -108,7 +108,7 @@ export default async function HomePage() {
                     <CardContent className="p-6">
                       <div className="flex items-center gap-2 mb-3">
                         <Badge variant="secondary" className="text-xs">
-                          {(post.category as { name?: string })?.name ?? '-'}
+                          {post.category.name ?? '-'}
                         </Badge>
                         {post.tags.slice(0, 2).map((tag) => (
                           <Badge key={tag.id} variant="outline" className="text-xs">
@@ -127,12 +127,12 @@ export default async function HomePage() {
                       <div className="flex items-center justify-between text-sm text-muted-foreground">
                         <div className="flex items-center gap-2">
                           <Avatar className="h-5 w-5">
-                            <AvatarImage src={(post.author as { avatar?: string })?.avatar || ''} />
+                            <AvatarImage src={post.author.avatar || ''} />
                             <AvatarFallback className="text-xs">
-                              {(post.author as { name?: string })?.name?.[0] || 'U'}
+                              {post.author.name?.[0] || 'U'}
                             </AvatarFallback>
                           </Avatar>
-                          <span className="text-xs">{(post.author as { name?: string })?.name || (post.author as { username?: string })?.username}</span>
+                          <span className="text-xs">{post.author.name || post.author.username}</span>
                         </div>
                         <div className="flex items-center gap-3 text-xs">
                           <span className="flex items-center gap-1">

@@ -30,8 +30,7 @@ export default async function EditPostPage({ params }: EditPostPageProps) {
   }
 
   // 只能编辑自己的文章（管理员可以编辑所有）
-  const authorId = (post.author as { id?: string })?.id
-  if (authorId !== session.user.id && session.user.role !== 'ADMIN') {
+  if (post.author.id !== session.user.id && session.user.role !== 'ADMIN') {
     redirect('/unauthorized')
   }
 
@@ -42,13 +41,14 @@ export default async function EditPostPage({ params }: EditPostPageProps) {
         <p className="text-muted-foreground">修改你的文章内容</p>
       </div>
 
-      <PostForm 
+      <PostForm
         post={{
           ...post,
+          categoryId: post.category.id,
           tags: post.tags || [],
-        }} 
-        categories={categories} 
-        allTags={tags} 
+        }}
+        categories={categories}
+        allTags={tags}
       />
     </div>
   )

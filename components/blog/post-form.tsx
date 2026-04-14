@@ -21,7 +21,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
-import { Category, Tag } from '@/lib/db'
+import type { Category, Tag } from '@/types/models'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
 

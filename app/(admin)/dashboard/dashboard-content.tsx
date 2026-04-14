@@ -13,6 +13,8 @@ import {
   TrendingUp,
   ArrowRight,
 } from 'lucide-react'
+import { transformAdminPostListItem } from '@/types/transformers'
+import type { AdminPostListItem } from '@/types/models'
 
 async function getDashboardStats(userId: string) {
   const [postStats] = await db
@@ -30,7 +32,7 @@ async function getDashboardStats(userId: string) {
 
   const totalViewsCount = totalViews.reduce((sum, p) => sum + p.total, 0)
 
-  const recentPosts = await db.query.posts.findMany({
+  const recentPostsRaw = await db.query.posts.findMany({
     where: eq(posts.authorId, userId),
     orderBy: desc(posts.createdAt),
     limit: 5,
@@ -38,6 +40,8 @@ async function getDashboardStats(userId: string) {
       category: true,
     },
   })
+
+  const recentPosts: AdminPostListItem[] = recentPostsRaw.map(transformAdminPostListItem)
 
   return {
     totalPosts: postStats.total,
@@ -146,7 +150,7 @@ export async function DashboardContent() {
                       {post.title}
                     </Link>
                     <p className="text-sm text-muted-foreground">
-                      {(post.category as { name?: string })?.name ?? '-'} · {post.views} 阅读 ·{' '}
+                      {post.category.name ?? '-'} · {post.views} 阅读 ·{' '}
                       {post.published ? '已发布' : '草稿'}
                     </p>
                   </div>
