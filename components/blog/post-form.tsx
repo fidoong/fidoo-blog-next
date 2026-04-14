@@ -1,12 +1,11 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { postFormSchema } from '@/types/forms'
-import { createPost, updatePost } from '@/lib/actions/posts'
 import { MarkdownEditor } from '@/components/editor'
 import { Button } from '@/components/ui/button'
 import {
@@ -24,6 +23,7 @@ import { Switch } from '@/components/ui/switch'
 import type { Category, Tag } from '@/types/models'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
+import { useCreatePost, useUpdatePost } from '@/lib/hooks/use-post-mutations'
 
 interface PostFormProps {
   post?: {
@@ -43,8 +43,11 @@ interface PostFormProps {
 
 export function PostForm({ post, categories, allTags }: PostFormProps) {
   const router = useRouter()
-  const [isPending, startTransition] = useTransition()
   const [content, setContent] = useState(post?.content || '')
+  const createMutation = useCreatePost()
+  const updateMutation = useUpdatePost(post?.id || '')
+
+  const isPending = createMutation.isPending || updateMutation.isPending
 
   const form = useForm<z.infer<typeof postFormSchema>>({
     resolver: zodResolver(postFormSchema),
@@ -61,21 +64,12 @@ export function PostForm({ post, categories, allTags }: PostFormProps) {
   })
 
   const onSubmit = async (values: z.infer<typeof postFormSchema>) => {
-    startTransition(async () => {
-      try {
-        if (post) {
-          await updatePost(post.id, { ...values, content })
-          toast.success('文章更新成功')
-        } else {
-          await createPost({ ...values, content })
-          toast.success('文章创建成功')
-        }
-        router.push('/dashboard')
-        router.refresh()
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : '操作失败')
-      }
-    })
+    const data = { ...values, content } as z.infer<typeof postFormSchema>
+    if (post) {
+      updateMutation.mutate(data)
+    } else {
+      createMutation.mutate(data)
+    }
   }
 
   const generateSlug = () => {

@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Loader2, RefreshCw } from 'lucide-react'
-import { useInfinitePosts } from '@/hooks/use-infinite-posts'
+import { usePosts } from '@/hooks/use-infinite-posts'
 import { useIntersectionObserver } from '@/hooks/use-intersection-observer'
 import { PostCard } from '@/components/blog/post-card'
 import {
@@ -24,31 +24,28 @@ export function BlogContent({ category, categories }: BlogContentProps) {
   const {
     posts,
     isLoading,
-    isFetchingNext,
-    hasMore,
+    isFetchingNextPage,
+    hasNextPage,
     total,
     error,
-    loadMore,
-    refresh,
-  } = useInfinitePosts({
+    fetchNextPage,
+    refetch,
+  } = usePosts({
     category,
     limit: 10,
-    prefetchPages: 1,
   })
 
-  // 使用 IntersectionObserver 自动加载更多
   const { ref: loadMoreRef, isIntersecting } = useIntersectionObserver({
     threshold: 0,
-    rootMargin: '400px', // 提前 400px 开始加载
+    rootMargin: '400px',
     triggerOnce: false,
   })
 
-  // 当元素进入视口时加载更多
   useEffect(() => {
-    if (isIntersecting && hasMore && !isFetchingNext) {
-      loadMore()
+    if (isIntersecting && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage()
     }
-  }, [isIntersecting, hasMore, isFetchingNext, loadMore])
+  }, [isIntersecting, hasNextPage, isFetchingNextPage, fetchNextPage])
 
   const currentCategory = category
     ? categories.find((c) => c.id === category)
@@ -64,7 +61,7 @@ export function BlogContent({ category, categories }: BlogContentProps) {
           <Card>
             <CardContent className="py-12 text-center">
               <p className="text-muted-foreground mb-4">加载失败: {error}</p>
-              <Button onClick={refresh} variant="outline">
+              <Button onClick={() => refetch()} variant="outline">
                 <RefreshCw className="h-4 w-4 mr-2" />
                 重试
               </Button>
@@ -112,11 +109,9 @@ export function BlogContent({ category, categories }: BlogContentProps) {
               <PostCard key={post.id} post={post} />
             ))}
 
-            {/* 加载更多区域 */}
-            {isFetchingNext && <LoadMoreSkeleton />}
+            {isFetchingNextPage && <LoadMoreSkeleton />}
 
-            {/* 加载更多触发器 */}
-            {hasMore && !isFetchingNext && (
+            {hasNextPage && !isFetchingNextPage && (
               <div
                 ref={loadMoreRef}
                 className="h-12 flex items-center justify-center"
@@ -125,8 +120,7 @@ export function BlogContent({ category, categories }: BlogContentProps) {
               </div>
             )}
 
-            {/* 已加载全部 */}
-            {!hasMore && posts.length > 0 && (
+            {!hasNextPage && posts.length > 0 && (
               <div className="py-4 text-center text-sm text-muted-foreground">
                 已加载全部 {total} 篇文章
               </div>

@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import type { PostWithRelations } from '@/types/models'
+import { useInfiniteQuery } from '@tanstack/react-query'
+import type { PostSummary } from '@/types/models'
 
 interface PostsResponse {
-  posts: PostWithRelations[]
+  posts: PostSummary[]
   total: number
   totalPages: number
   page: number
@@ -15,135 +15,52 @@ interface UseInfinitePostsOptions {
   category?: string
   search?: string
   limit?: number
-  prefetchPages?: number
 }
 
+/**
+ * 无限滚动文章列表 Hook
+ * 使用 TanStack Query 实现缓存、去重、重试
+ */
 export function useInfinitePosts(options: UseInfinitePostsOptions = {}) {
-  const { category, search, limit = 10, prefetchPages = 1 } = options
+  const { category, search, limit = 10 } = options
 
-  const [posts, setPosts] = useState<PostWithRelations[]>([])
-  const [page, setPage] = useState(1)
-  const [isLoading, setIsLoading] = useState(false)
-  const [isFetchingNext, setIsFetchingNext] = useState(false)
-  const [hasMore, setHasMore] = useState(true)
-  const [total, setTotal] = useState(0)
-  const [error, setError] = useState<string | null>(null)
+  return useInfiniteQuery({
+    queryKey: ['posts', 'infinite', { category, search, limit }],
+    queryFn: async ({ pageParam }) => {
+      const params = new URLSearchParams({
+        page: pageParam.toString(),
+        limit: limit.toString(),
+      })
+      if (category) params.set('category', category)
+      if (search) params.set('search', search)
 
-  const fetchPosts = useCallback(
-    async (pageNum: number, isInitial = false) => {
-      if (isInitial) {
-        setIsLoading(true)
-      } else {
-        setIsFetchingNext(true)
+      const response = await fetch(`/api/posts?${params}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch posts')
       }
-      setError(null)
-
-      try {
-        const params = new URLSearchParams({
-          page: pageNum.toString(),
-          limit: limit.toString(),
-        })
-        if (category) params.set('category', category)
-        if (search) params.set('search', search)
-
-        const response = await fetch(`/api/posts?${params}`)
-        if (!response.ok) {
-          throw new Error(`Failed to fetch posts: ${response.status}`)
-        }
-
-        const data: PostsResponse = await response.json()
-
-        setPosts((prev) =>
-          isInitial ? data.posts : [...prev, ...data.posts]
-        )
-        setHasMore(data.hasMore)
-        setTotal(data.total)
-
-        return data
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error')
-        return null
-      } finally {
-        if (isInitial) {
-          setIsLoading(false)
-        } else {
-          setIsFetchingNext(false)
-        }
-      }
+      return response.json() as Promise<PostsResponse>
     },
-    [category, search, limit]
-  )
+    getNextPageParam: (lastPage) =>
+      lastPage.hasMore ? lastPage.page + 1 : undefined,
+    initialPageParam: 1,
+    staleTime: 60 * 1000,
+  })
+}
 
-  // 初始加载 - 依赖变化时重置并加载
-  useEffect(() => {
-    setPosts([])
-    setPage(1)
-    setHasMore(true)
-    setError(null)
-    fetchPosts(1, true)
-  }, [category, search, fetchPosts])
-
-  // 加载下一页
-  const loadMore = useCallback(async () => {
-    if (isFetchingNext || !hasMore) return
-
-    const nextPage = page + 1
-    const result = await fetchPosts(nextPage)
-
-    if (result) {
-      setPage(nextPage)
-
-      // 预加载后续页面
-      if (prefetchPages > 0 && result.hasMore) {
-        prefetchNextPages(nextPage + 1)
-      }
-    }
-  }, [page, isFetchingNext, hasMore, fetchPosts, prefetchPages])
-
-  // 预加载后续页面
-  const prefetchNextPages = useCallback(
-    async (startPage: number) => {
-      const pagesToPrefetch = Math.min(prefetchPages, 2)
-
-      for (let i = 0; i < pagesToPrefetch; i++) {
-        const pageNum = startPage + i
-
-        try {
-          const params = new URLSearchParams({
-            page: pageNum.toString(),
-            limit: limit.toString(),
-          })
-          if (category) params.set('category', category)
-          if (search) params.set('search', search)
-
-          await fetch(`/api/posts?${params}`, {
-            priority: 'low',
-          } as RequestInit)
-        } catch {
-          // 预加载失败静默处理
-        }
-      }
-    },
-    [category, search, limit, prefetchPages]
-  )
-
-  // 刷新数据
-  const refresh = useCallback(() => {
-    setPosts([])
-    setPage(1)
-    setHasMore(true)
-    setError(null)
-    fetchPosts(1, true)
-  }, [fetchPosts])
+/**
+ * 便捷 Hook：返回扁平化的数据和常用状态
+ */
+export function usePosts(options: UseInfinitePostsOptions = {}) {
+  const query = useInfinitePosts(options)
 
   return {
-    posts,
-    isLoading,
-    isFetchingNext,
-    hasMore,
-    total,
-    error,
-    loadMore,
-    refresh,
+    posts: query.data?.pages.flatMap((page) => page.posts) ?? [],
+    total: query.data?.pages[0]?.total ?? 0,
+    isLoading: query.isLoading,
+    isFetchingNextPage: query.isFetchingNextPage,
+    hasNextPage: query.hasNextPage,
+    error: query.error?.message ?? null,
+    fetchNextPage: query.fetchNextPage,
+    refetch: query.refetch,
   }
 }
