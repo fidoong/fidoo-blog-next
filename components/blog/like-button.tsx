@@ -1,10 +1,8 @@
 'use client'
 
-import { useState, useTransition } from 'react'
 import { Heart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { togglePostLike } from '@/lib/actions/likes'
-import { toast } from 'sonner'
+import { usePostInteractions } from '@/lib/hooks/use-post-interactions'
 import { cn } from '@/lib/utils'
 
 interface LikeButtonProps {
@@ -14,31 +12,18 @@ interface LikeButtonProps {
 }
 
 export function LikeButton({ postId, initialLiked, initialCount }: LikeButtonProps) {
-  const [isPending, startTransition] = useTransition()
-  const [liked, setLiked] = useState(initialLiked)
-  const [count, setCount] = useState(initialCount)
-
-  const handleToggleLike = () => {
-    startTransition(async () => {
-      try {
-        const result = await togglePostLike(postId)
-        setLiked(result.liked)
-        setCount(result.likesCount)
-      } catch (error) {
-        if (error instanceof Error && error.message.includes('Unauthorized')) {
-          toast.error('请先登录后再点赞')
-        } else {
-          toast.error('操作失败，请重试')
-        }
-      }
-    })
-  }
+  const { liked, likesCount, isPending, toggleLike } = usePostInteractions({
+    postId,
+    initialLiked,
+    initialBookmarked: false,
+    initialLikesCount: initialCount,
+  })
 
   return (
     <Button
       variant="outline"
       size="sm"
-      onClick={handleToggleLike}
+      onClick={toggleLike}
       disabled={isPending}
       className={cn(
         'transition-colors',
@@ -51,7 +36,7 @@ export function LikeButton({ postId, initialLiked, initialCount }: LikeButtonPro
           liked && 'fill-red-500 text-red-500'
         )}
       />
-      {count}
+      {likesCount}
     </Button>
   )
 }

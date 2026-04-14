@@ -1,20 +1,14 @@
 'use client'
 
-import { useState, useTransition, useEffect, useCallback, useRef } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
-import { postFormSchema } from '@/types/forms'
-import { createPost } from '@/lib/actions/posts'
 import { MarkdownEditor } from '@/components/editor'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import type { Category, Tag } from '@/types/models'
-import { toast } from 'sonner'
 import {
   Loader2,
   ChevronLeft,
@@ -29,6 +23,7 @@ import {
   Save,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { usePostForm } from '@/lib/hooks/use-post-form'
 
 interface WriteFormProps {
   categories: Category[]
@@ -41,103 +36,41 @@ interface WriteFormProps {
 
 export function WriteForm({ categories, allTags, user }: WriteFormProps) {
   const router = useRouter()
-  const [isPending, startTransition] = useTransition()
-  const [content, setContent] = useState('')
   const [showSettings, setShowSettings] = useState(false)
-  const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const [isDraftSaving, setIsDraftSaving] = useState(false)
-  const hasRestoredRef = useRef(false)
 
-  const form = useForm<z.infer<typeof postFormSchema>>({
-    resolver: zodResolver(postFormSchema),
-    defaultValues: {
-      title: '',
-      slug: '',
-      excerpt: '',
-      content: '',
-      coverImage: '',
-      published: false,
-      categoryId: '',
-      tagIds: [],
-    },
+  const {
+    form,
+    content,
+    setContent,
+    isPending,
+    lastSaved,
+    generateSlug,
+    handleSubmit,
+    forceSave,
+    clearDraft,
+  } = usePostForm({
+    autosave: true,
+    autosaveKey: 'write-draft',
   })
-
-  // 自动恢复草稿（只执行一次）
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    if (hasRestoredRef.current) return
-    
-    const saved = localStorage.getItem('write-draft')
-    if (saved) {
-      try {
-        const draft = JSON.parse(saved)
-        form.reset(draft)
-        setContent(draft.content || '')
-        hasRestoredRef.current = true
-        toast.info('已恢复上次草稿')
-      } catch {
-        // ignore
-      }
-    }
-  }, [])
-
-  // 自动保存
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const values = form.getValues()
-      if (values.title || content) {
-        localStorage.setItem(
-          'write-draft',
-          JSON.stringify({ ...values, content })
-        )
-        setLastSaved(new Date())
-      }
-    }, 30000)
-
-    return () => clearInterval(interval)
-  }, [form, content])
-
-  const generateSlug = useCallback(() => {
-    const title = form.getValues('title')
-    if (title) {
-      const slug = title
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .slice(0, 50)
-      form.setValue('slug', slug)
-    }
-  }, [form])
-
-  const onSubmit = async (values: z.infer<typeof postFormSchema>) => {
-    startTransition(async () => {
-      try {
-        await createPost({ ...values, content })
-        localStorage.removeItem('write-draft')
-        toast.success('文章发布成功！')
-        router.push('/dashboard')
-        router.refresh()
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : '发布失败')
-      }
-    })
-  }
-
-  const saveDraft = async () => {
-    setIsDraftSaving(true)
-    const values = form.getValues()
-    localStorage.setItem('write-draft', JSON.stringify({ ...values, content }))
-    setTimeout(() => {
-      setIsDraftSaving(false)
-      setLastSaved(new Date())
-      toast.success('草稿已保存')
-    }, 500)
-  }
 
   const title = form.watch('title')
   const selectedTagIds = form.watch('tagIds') || []
   const published = form.watch('published')
   const coverImage = form.watch('coverImage')
+
+  const saveDraft = () => {
+    setIsDraftSaving(true)
+    forceSave()
+    setTimeout(() => {
+      setIsDraftSaving(false)
+    }, 500)
+  }
+
+  const onSubmit = () => {
+    handleSubmit()
+    clearDraft()
+  }
 
   return (
     <div className="flex flex-col h-screen bg-background">
@@ -186,7 +119,7 @@ export function WriteForm({ categories, allTags, user }: WriteFormProps) {
             设置
           </Button>
           <Button
-            onClick={form.handleSubmit(onSubmit)}
+            onClick={onSubmit}
             disabled={isPending}
             size="sm"
             className="gap-1.5"
@@ -203,9 +136,8 @@ export function WriteForm({ categories, allTags, user }: WriteFormProps) {
 
       {/* 主体内容 */}
       <div className="flex-1 flex overflow-hidden">
-        {/* 左侧编辑区 - 占满剩余空间 */}
+        {/* 左侧编辑区 */}
         <main className="flex-1 flex flex-col min-w-0 isolate">
-          {/* 标题和元信息 */}
           <div className="flex-none px-6 lg:px-10 py-4 border-b bg-muted/20 relative z-0">
             <Input
               placeholder="输入文章标题..."
@@ -224,7 +156,6 @@ export function WriteForm({ categories, allTags, user }: WriteFormProps) {
             />
           </div>
 
-          {/* 编辑器 - 占满剩余空间 */}
           <div className="flex-1 overflow-hidden">
             <MarkdownEditor
               initialValue={content}
@@ -240,7 +171,6 @@ export function WriteForm({ categories, allTags, user }: WriteFormProps) {
             showSettings ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
           )}
         >
-          {/* 移动端关闭按钮 */}
           <div className="lg:hidden flex items-center justify-between p-4 border-b">
             <span className="font-medium">文章设置</span>
             <Button variant="ghost" size="icon" onClick={() => setShowSettings(false)}>
@@ -368,7 +298,6 @@ export function WriteForm({ categories, allTags, user }: WriteFormProps) {
               />
               {coverImage && (
                 <div className="aspect-video rounded-lg border bg-muted overflow-hidden">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={coverImage}
                     alt="封面预览"
@@ -385,7 +314,6 @@ export function WriteForm({ categories, allTags, user }: WriteFormProps) {
             <div className="pt-4 border-t">
               <div className="flex items-center gap-3">
                 {user.image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={user.image}
                     alt={user.name || ''}

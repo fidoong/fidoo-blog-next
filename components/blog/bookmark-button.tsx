@@ -1,10 +1,8 @@
 'use client'
 
-import { useState, useTransition } from 'react'
 import { Bookmark } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { toggleBookmark } from '@/lib/actions/bookmarks'
-import { toast } from 'sonner'
+import { usePostInteractions } from '@/lib/hooks/use-post-interactions'
 import { cn } from '@/lib/utils'
 
 interface BookmarkButtonProps {
@@ -13,30 +11,18 @@ interface BookmarkButtonProps {
 }
 
 export function BookmarkButton({ postId, initialBookmarked }: BookmarkButtonProps) {
-  const [isPending, startTransition] = useTransition()
-  const [bookmarked, setBookmarked] = useState(initialBookmarked)
-
-  const handleToggleBookmark = () => {
-    startTransition(async () => {
-      try {
-        const result = await toggleBookmark(postId)
-        setBookmarked(result.bookmarked)
-        toast.success(result.bookmarked ? '已收藏' : '已取消收藏')
-      } catch (error) {
-        if (error instanceof Error && error.message.includes('Unauthorized')) {
-          toast.error('请先登录后再收藏')
-        } else {
-          toast.error('操作失败，请重试')
-        }
-      }
-    })
-  }
+  const { bookmarked, isPending, toggleBookmark } = usePostInteractions({
+    postId,
+    initialLiked: false,
+    initialBookmarked,
+    initialLikesCount: 0,
+  })
 
   return (
     <Button
       variant="outline"
       size="sm"
-      onClick={handleToggleBookmark}
+      onClick={toggleBookmark}
       disabled={isPending}
       className={cn(
         'transition-colors',

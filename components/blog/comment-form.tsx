@@ -1,16 +1,10 @@
 'use client'
 
-import { useTransition } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { commentFormSchema } from '@/types/forms'
-import { createComment } from '@/lib/actions/comments'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form'
-import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
+import { useCommentForm } from '@/lib/hooks/use-comment-form'
 
 interface CommentFormProps {
   postId: string
@@ -27,32 +21,11 @@ export function CommentForm({
   onCancel,
   placeholder = '写下你的评论...',
 }: CommentFormProps) {
-  const [isPending, startTransition] = useTransition()
-
-  const form = useForm<z.infer<typeof commentFormSchema>>({
-    resolver: zodResolver(commentFormSchema),
-    defaultValues: {
-      content: '',
-      parentId,
-    },
+  const { form, isPending, onSubmit } = useCommentForm({
+    postId,
+    parentId,
+    onSuccess,
   })
-
-  const onSubmit = async (values: z.infer<typeof commentFormSchema>) => {
-    startTransition(async () => {
-      try {
-        await createComment(postId, values)
-        toast.success(parentId ? '回复成功' : '评论成功')
-        form.reset()
-        onSuccess?.()
-      } catch (error) {
-        if (error instanceof Error && error.message.includes('Unauthorized')) {
-          toast.error('请先登录后再评论')
-        } else {
-          toast.error('发布失败，请重试')
-        }
-      }
-    })
-  }
 
   return (
     <Form {...form}>
