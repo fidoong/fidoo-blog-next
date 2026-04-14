@@ -1,13 +1,20 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { auth } from '@/lib/auth'
 import { getPostBySlug } from '@/lib/actions/posts'
+import { hasLikedPost } from '@/lib/actions/likes'
+import { getCommentsByPostId } from '@/lib/actions/comments'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { Calendar, Eye, Heart, Clock, Share2 } from 'lucide-react'
+import { Calendar, Eye, Clock, Share2 } from 'lucide-react'
 import { EditorPreview } from '@/components/editor'
+import { ViewTracker } from '@/components/blog/view-tracker'
+import { LikeButton } from '@/components/blog/like-button'
+import { CommentList } from '@/components/blog/comment-list'
+import type { BlogComment } from '@/types/comments'
 
 interface PostPageProps {
   params: Promise<{
@@ -37,8 +44,24 @@ export default async function PostPage({ params }: PostPageProps) {
     notFound()
   }
 
+  const [session, comments] = await Promise.all([
+    auth(),
+    getCommentsByPostId(post.id) as Promise<BlogComment[]>,
+  ])
+
+  // 获取当前用户是否点赞（如果已登录）
+  let hasLiked = false
+  if (session?.user) {
+    try {
+      hasLiked = await hasLikedPost(post.id)
+    } catch {
+      hasLiked = false
+    }
+  }
+
   return (
     <div className="container mx-auto py-8 px-4">
+      <ViewTracker slug={slug} />
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Main Content */}
         <div className="lg:col-span-3">
@@ -109,16 +132,27 @@ export default async function PostPage({ params }: PostPageProps) {
             {/* Footer Actions */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm">
-                  <Heart className="mr-2 h-4 w-4" />
-                  {post.likesCount}
-                </Button>
+                <LikeButton 
+                  postId={post.id} 
+                  initialLiked={hasLiked} 
+                  initialCount={post.likesCount} 
+                />
                 <Button variant="outline" size="sm">
                   <Share2 className="mr-2 h-4 w-4" />
                   分享
                 </Button>
               </div>
             </div>
+
+            <Separator className="my-8" />
+
+            {/* Comments Section */}
+            <CommentList
+              postId={post.id}
+              comments={comments}
+              currentUserId={session?.user?.id}
+              commentsCount={post.commentsCount}
+            />
           </article>
         </div>
 

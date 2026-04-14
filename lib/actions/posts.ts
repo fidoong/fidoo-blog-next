@@ -133,6 +133,24 @@ export async function getPostBySlug(slug: string) {
   }
 }
 
+// 增加文章浏览量
+export async function incrementPostViews(slug: string) {
+  const post = await db.query.posts.findFirst({
+    where: eq(posts.slug, slug),
+    columns: { id: true, views: true },
+  })
+
+  if (!post) return null
+
+  const [updated] = await db
+    .update(posts)
+    .set({ views: post.views + 1 })
+    .where(eq(posts.id, post.id))
+    .returning({ views: posts.views })
+
+  return updated
+}
+
 // 获取单篇文章（通过 ID）
 export async function getPost(id: string) {
   const post = await db.query.posts.findFirst({
