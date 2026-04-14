@@ -6,6 +6,7 @@ import { posts, postsToTags } from '@/lib/db/schema'
 import { requireAuth, requireResourceAccess } from '@/lib/auth/server-permissions'
 import { postFormSchema } from '@/types/forms'
 import { eq, and, desc, ilike, count } from 'drizzle-orm'
+import { tags } from '@/lib/db/schema'
 import { z } from 'zod'
 
 // 获取文章列表
@@ -97,6 +98,58 @@ export async function getPosts({
     total: totalResult.count,
     totalPages: Math.ceil(totalResult.count / limit),
     page,
+  }
+}
+
+// 获取标签下的文章
+export async function getPostsByTagSlug(tagSlug: string, limit = 20) {
+  // 先获取标签
+  const tag = await db.query.tags.findFirst({
+    where: eq(tags.slug, tagSlug),
+  })
+
+  if (!tag) {
+    return { posts: [], total: 0 }
+  }
+
+  // 获取关联的文章ID
+  const postTags = await db.query.postsToTags.findMany({
+    where: eq(postsToTags.tagId, tag.id),
+    with: {
+      post: {
+        with: {
+          author: {
+            columns: {
+              id: true,
+              username: true,
+              name: true,
+              avatar: true,
+            },
+          },
+          category: true,
+        },
+      },
+    },
+    orderBy: desc(postsToTags.postId),
+    limit,
+  })
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const postsList: any[] = postTags.map((pt) => ({
+    ...pt.post,
+    tags: [], // 简化处理，不在列表页显示标签
+  }))
+
+  // 获取总数
+  const [countResult] = await db
+    .select({ count: count() })
+    .from(postsToTags)
+    .where(eq(postsToTags.tagId, tag.id))
+
+  return {
+    posts: postsList,
+    total: countResult.count,
+    tag,
   }
 }
 

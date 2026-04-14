@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { auth } from '@/lib/auth'
 import { getPostBySlug } from '@/lib/actions/posts'
 import { hasLikedPost } from '@/lib/actions/likes'
+import { hasBookmarkedPost } from '@/lib/actions/bookmarks'
 import { getCommentsByPostId } from '@/lib/actions/comments'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -13,6 +14,7 @@ import { Calendar, Eye, Clock, Share2 } from 'lucide-react'
 import { EditorPreview } from '@/components/editor'
 import { ViewTracker } from '@/components/blog/view-tracker'
 import { LikeButton } from '@/components/blog/like-button'
+import { BookmarkButton } from '@/components/blog/bookmark-button'
 import { CommentList } from '@/components/blog/comment-list'
 import type { BlogComment } from '@/types/comments'
 
@@ -49,13 +51,19 @@ export default async function PostPage({ params }: PostPageProps) {
     getCommentsByPostId(post.id) as Promise<BlogComment[]>,
   ])
 
-  // 获取当前用户是否点赞（如果已登录）
+  // 获取当前用户是否点赞/收藏（如果已登录）
   let hasLiked = false
+  let hasBookmarked = false
   if (session?.user) {
     try {
       hasLiked = await hasLikedPost(post.id)
     } catch {
       hasLiked = false
+    }
+    try {
+      hasBookmarked = await hasBookmarkedPost(post.id)
+    } catch {
+      hasBookmarked = false
     }
   }
 
@@ -136,6 +144,10 @@ export default async function PostPage({ params }: PostPageProps) {
                   postId={post.id} 
                   initialLiked={hasLiked} 
                   initialCount={post.likesCount} 
+                />
+                <BookmarkButton
+                  postId={post.id}
+                  initialBookmarked={hasBookmarked}
                 />
                 <Button variant="outline" size="sm">
                   <Share2 className="mr-2 h-4 w-4" />
