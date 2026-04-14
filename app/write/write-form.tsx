@@ -13,17 +13,20 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
-
 import { Category, Tag } from '@/lib/db'
 import { toast } from 'sonner'
 import {
   Loader2,
   ChevronLeft,
-  Eye,
   Settings,
   ImageIcon,
   Hash,
   Sparkles,
+  X,
+  Link as LinkIcon,
+  Tags,
+  Eye,
+  Save,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -84,7 +87,7 @@ export function WriteForm({ categories, allTags, user }: WriteFormProps) {
         )
         setLastSaved(new Date())
       }
-    }, 30000) // 30秒自动保存
+    }, 30000)
 
     return () => clearInterval(interval)
   }, [form, content])
@@ -128,135 +131,136 @@ export function WriteForm({ categories, allTags, user }: WriteFormProps) {
 
   const title = form.watch('title')
   const selectedTagIds = form.watch('tagIds') || []
+  const published = form.watch('published')
+  const coverImage = form.watch('coverImage')
 
   return (
-    <div className="flex flex-col min-h-screen">
-      {/* 顶部导航栏 */}
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex h-14 items-center justify-between px-4 lg:px-8">
-          <div className="flex items-center gap-4">
-            <Link
-              href="/"
-              className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              <span className="hidden sm:inline">返回</span>
-            </Link>
-            <div className="h-6 w-px bg-border" />
-            <span className="text-sm text-muted-foreground hidden sm:inline">
-              {title || '无标题'}
-            </span>
-          </div>
+    <div className="flex flex-col h-screen bg-background">
+      {/* 顶部导航栏 - 更紧凑 */}
+      <header className="flex-none h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center justify-between px-4 lg:px-6">
+        <div className="flex items-center gap-3">
+          <Link
+            href="/"
+            className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-muted transition-colors"
+          >
+            <ChevronLeft className="h-5 w-5 text-muted-foreground" />
+          </Link>
+          <div className="h-5 w-px bg-border" />
+          <span className="text-sm text-muted-foreground truncate max-w-[200px] sm:max-w-md">
+            {title || '无标题'}
+          </span>
+        </div>
 
-          <div className="flex items-center gap-3">
-            {lastSaved && (
-              <span className="text-xs text-muted-foreground hidden md:inline">
-                草稿已保存 {lastSaved.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
-              </span>
+        <div className="flex items-center gap-2">
+          {lastSaved && (
+            <span className="text-xs text-muted-foreground hidden lg:inline mr-2">
+              已保存 {lastSaved.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={saveDraft}
+            disabled={isDraftSaving}
+            className="gap-1.5"
+          >
+            {isDraftSaving ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4" />
             )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={saveDraft}
-              disabled={isDraftSaving}
-            >
-              {isDraftSaving ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                '保存草稿'
-              )}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowSettings(!showSettings)}
-              className={cn(showSettings && 'bg-muted')}
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
-            <Button
-              onClick={form.handleSubmit(onSubmit)}
-              disabled={isPending}
-              size="sm"
-              className="gap-2"
-            >
-              {isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="h-4 w-4" />
-              )}
-              发布
-            </Button>
-          </div>
+            <span className="hidden sm:inline">保存</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowSettings(true)}
+            className="gap-1.5 lg:hidden"
+          >
+            <Settings className="h-4 w-4" />
+            设置
+          </Button>
+          <Button
+            onClick={form.handleSubmit(onSubmit)}
+            disabled={isPending}
+            size="sm"
+            className="gap-1.5"
+          >
+            {isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4" />
+            )}
+            发布
+          </Button>
         </div>
       </header>
 
       {/* 主体内容 */}
       <div className="flex-1 flex overflow-hidden">
-        {/* 左侧编辑区 */}
-        <main className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto">
-            <div className="max-w-4xl mx-auto w-full px-4 py-6 lg:px-8">
-              {/* 标题输入 */}
-              <div className="mb-4">
-                <Input
-                  placeholder="输入文章标题..."
-                  className="border-0 bg-transparent text-4xl font-bold placeholder:text-muted-foreground/40 focus-visible:ring-0 px-0 h-auto py-2"
-                  {...form.register('title')}
-                />
-                {form.formState.errors.title && (
-                  <p className="text-sm text-destructive mt-2">
-                    {form.formState.errors.title.message}
-                  </p>
-                )}
-              </div>
+        {/* 左侧编辑区 - 占满剩余空间 */}
+        <main className="flex-1 flex flex-col min-w-0">
+          {/* 标题和元信息 */}
+          <div className="flex-none px-6 lg:px-10 py-4 border-b bg-muted/20">
+            <Input
+              placeholder="输入文章标题..."
+              className="border-0 bg-transparent text-2xl lg:text-3xl font-bold placeholder:text-muted-foreground/30 focus-visible:ring-0 px-0 h-auto py-1"
+              {...form.register('title')}
+            />
+            {form.formState.errors.title && (
+              <p className="text-xs text-destructive mt-1">
+                {form.formState.errors.title.message}
+              </p>
+            )}
+            <Textarea
+              placeholder="添加摘要（可选）..."
+              className="border-0 bg-transparent resize-none placeholder:text-muted-foreground/30 focus-visible:ring-0 px-0 min-h-[40px] text-sm text-muted-foreground mt-1"
+              {...form.register('excerpt')}
+            />
+          </div>
 
-              {/* 摘要输入 */}
-              <div className="mb-6">
-                <Textarea
-                  placeholder="添加文章摘要（可选，用于列表展示）..."
-                  className="border-0 bg-transparent resize-none placeholder:text-muted-foreground/40 focus-visible:ring-0 px-0 min-h-[50px] text-base text-muted-foreground"
-                  {...form.register('excerpt')}
-                />
-              </div>
-
-              {/* 正文编辑器 - 占满剩余空间 */}
-              <div className="min-h-[600px]">
-                <MarkdownEditor
-                  initialValue={content}
-                  onChange={setContent}
-                />
-              </div>
-              
-              {/* 底部留白 */}
-              <div className="h-20" />
-            </div>
+          {/* 编辑器 - 占满剩余空间 */}
+          <div className="flex-1 overflow-hidden">
+            <MarkdownEditor
+              initialValue={content}
+              onChange={setContent}
+            />
           </div>
         </main>
 
-        {/* 右侧设置面板 */}
+        {/* 右侧设置面板 - 更窄，默认显示 */}
         <aside
           className={cn(
-            'w-80 border-l bg-muted/30 transition-all duration-300 overflow-y-auto',
-            showSettings ? 'translate-x-0' : 'translate-x-full lg:translate-x-0 lg:w-80 hidden lg:block'
+            'fixed inset-y-0 right-0 z-50 w-80 bg-background border-l shadow-xl transform transition-transform duration-300 lg:static lg:transform-none lg:shadow-none lg:w-72 xl:w-80',
+            showSettings ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
           )}
         >
-          <div className="p-6 space-y-6">
-            {/* 发布设置 */}
+          {/* 移动端关闭按钮 */}
+          <div className="lg:hidden flex items-center justify-between p-4 border-b">
+            <span className="font-medium">文章设置</span>
+            <Button variant="ghost" size="icon" onClick={() => setShowSettings(false)}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="h-full overflow-y-auto p-5 space-y-6">
+            {/* 发布状态 */}
             <div className="space-y-3">
-              <h3 className="text-sm font-medium flex items-center gap-2">
-                <Eye className="h-4 w-4" />
+              <h3 className="text-sm font-medium flex items-center gap-2 text-foreground">
+                <Eye className="h-4 w-4 text-muted-foreground" />
                 发布设置
               </h3>
-              <div className="flex items-center justify-between rounded-lg border bg-background p-3">
+              <div className="flex items-center justify-between rounded-lg border bg-card p-3">
                 <div className="space-y-0.5">
-                  <p className="text-sm font-medium">立即发布</p>
+                  <p className="text-sm font-medium">
+                    {published ? '立即发布' : '保存为草稿'}
+                  </p>
                   <p className="text-xs text-muted-foreground">
-                    关闭则为草稿状态
+                    {published ? '文章将对所有人可见' : '仅自己可见'}
                   </p>
                 </div>
                 <Switch
-                  checked={form.watch('published')}
+                  checked={published}
                   onCheckedChange={(checked) =>
                     form.setValue('published', checked)
                   }
@@ -264,44 +268,16 @@ export function WriteForm({ categories, allTags, user }: WriteFormProps) {
               </div>
             </div>
 
-            {/* URL 设置 */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-medium">链接设置</h3>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Input
-                    placeholder="article-slug"
-                    className="flex-1"
-                    {...form.register('slug')}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={generateSlug}
-                    className="shrink-0"
-                  >
-                    生成
-                  </Button>
-                </div>
-                {form.formState.errors.slug && (
-                  <p className="text-xs text-destructive">
-                    {form.formState.errors.slug.message}
-                  </p>
-                )}
-              </div>
-            </div>
-
             {/* 分类 */}
             <div className="space-y-3">
               <h3 className="text-sm font-medium flex items-center gap-2">
-                <Hash className="h-4 w-4" />
+                <Hash className="h-4 w-4 text-muted-foreground" />
                 分类
               </h3>
               <select
                 value={form.watch('categoryId')}
                 onChange={(e) => form.setValue('categoryId', e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="w-full h-9 rounded-md border border-input bg-transparent px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 <option value="">选择分类</option>
                 {categories.map((category) => (
@@ -319,8 +295,11 @@ export function WriteForm({ categories, allTags, user }: WriteFormProps) {
 
             {/* 标签 */}
             <div className="space-y-3">
-              <h3 className="text-sm font-medium">标签</h3>
-              <div className="flex flex-wrap gap-2">
+              <h3 className="text-sm font-medium flex items-center gap-2">
+                <Tags className="h-4 w-4 text-muted-foreground" />
+                标签
+              </h3>
+              <div className="flex flex-wrap gap-1.5">
                 {allTags.map((tag) => {
                   const isSelected = selectedTagIds.includes(tag.id)
                   return (
@@ -334,10 +313,10 @@ export function WriteForm({ categories, allTags, user }: WriteFormProps) {
                         form.setValue('tagIds', newValue)
                       }}
                       className={cn(
-                        'px-2.5 py-1 rounded-full text-xs transition-colors border',
+                        'px-2.5 py-1 rounded-md text-xs transition-colors',
                         isSelected
-                          ? 'bg-primary text-primary-foreground border-primary'
-                          : 'bg-background border-border hover:border-muted-foreground'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted hover:bg-muted/80 text-muted-foreground'
                       )}
                     >
                       {tag.name}
@@ -347,20 +326,46 @@ export function WriteForm({ categories, allTags, user }: WriteFormProps) {
               </div>
             </div>
 
+            {/* URL 设置 */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-medium flex items-center gap-2">
+                <LinkIcon className="h-4 w-4 text-muted-foreground" />
+                文章链接
+              </h3>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="article-slug"
+                  className="h-9 text-sm"
+                  {...form.register('slug')}
+                />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={generateSlug}
+                  className="shrink-0 h-9 px-3"
+                >
+                  生成
+                </Button>
+              </div>
+            </div>
+
             {/* 封面图 */}
             <div className="space-y-3">
               <h3 className="text-sm font-medium flex items-center gap-2">
-                <ImageIcon className="h-4 w-4" />
+                <ImageIcon className="h-4 w-4 text-muted-foreground" />
                 封面图
               </h3>
               <Input
-                placeholder="https://example.com/image.jpg"
+                placeholder="https://..."
+                className="h-9 text-sm"
                 {...form.register('coverImage')}
               />
-              {form.watch('coverImage') && (
+              {coverImage && (
                 <div className="aspect-video rounded-lg border bg-muted overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={form.watch('coverImage')}
+                    src={coverImage}
                     alt="封面预览"
                     className="w-full h-full object-cover"
                     onError={(e) => {
@@ -372,27 +377,36 @@ export function WriteForm({ categories, allTags, user }: WriteFormProps) {
             </div>
 
             {/* 作者信息 */}
-            <div className="pt-6 border-t">
+            <div className="pt-4 border-t">
               <div className="flex items-center gap-3">
                 {user.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={user.image}
                     alt={user.name || ''}
-                    className="h-10 w-10 rounded-full"
+                    className="h-9 w-9 rounded-full"
                   />
                 ) : (
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium">
+                  <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium">
                     {user.name?.[0] || 'U'}
                   </div>
                 )}
-                <div>
-                  <p className="text-sm font-medium">{user.name || '匿名用户'}</p>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">{user.name || '匿名用户'}</p>
                   <p className="text-xs text-muted-foreground">作者</p>
                 </div>
               </div>
             </div>
           </div>
         </aside>
+
+        {/* 移动端遮罩 */}
+        {showSettings && (
+          <div
+            className="fixed inset-0 bg-black/20 z-40 lg:hidden"
+            onClick={() => setShowSettings(false)}
+          />
+        )}
       </div>
     </div>
   )
