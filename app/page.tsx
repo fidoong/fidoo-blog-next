@@ -1,5 +1,3 @@
-'use cache'
-
 import Link from 'next/link'
 import { ArrowRight, PenLine, Users, TrendingUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -110,7 +108,7 @@ export default async function HomePage() {
                     <CardContent className="p-6">
                       <div className="flex items-center gap-2 mb-3">
                         <Badge variant="secondary" className="text-xs">
-                          {post.category?.name}
+                          {(post.category as { name?: string })?.name ?? '-'}
                         </Badge>
                         {post.tags.slice(0, 2).map((tag) => (
                           <Badge key={tag.id} variant="outline" className="text-xs">
@@ -129,12 +127,12 @@ export default async function HomePage() {
                       <div className="flex items-center justify-between text-sm text-muted-foreground">
                         <div className="flex items-center gap-2">
                           <Avatar className="h-5 w-5">
-                            <AvatarImage src={post.author?.avatar || ''} />
+                            <AvatarImage src={(post.author as { avatar?: string })?.avatar || ''} />
                             <AvatarFallback className="text-xs">
-                              {post.author?.name?.[0] || 'U'}
+                              {(post.author as { name?: string })?.name?.[0] || 'U'}
                             </AvatarFallback>
                           </Avatar>
-                          <span className="text-xs">{post.author?.name || post.author?.username}</span>
+                          <span className="text-xs">{(post.author as { name?: string })?.name || (post.author as { username?: string })?.username}</span>
                         </div>
                         <div className="flex items-center gap-3 text-xs">
                           <span className="flex items-center gap-1">

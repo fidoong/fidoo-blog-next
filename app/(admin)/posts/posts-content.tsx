@@ -76,7 +76,7 @@ export async function PostsContent() {
                       {post.title}
                     </Link>
                   </TableCell>
-                  <TableCell>{post.category?.name || '-'}</TableCell>
+                  <TableCell>{(post.category as { name?: string })?.name ?? '-'}</TableCell>
                   <TableCell>
                     <Badge variant={post.published ? 'default' : 'secondary'}>
                       {post.published ? '已发布' : '草稿'}

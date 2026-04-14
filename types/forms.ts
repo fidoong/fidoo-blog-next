@@ -36,15 +36,13 @@ export const postFormSchema = z.object({
     .optional()
     .or(z.literal('')),
 
-  published: z.boolean().default(false),
+  published: z.boolean(),
 
   categoryId: z
     .string()
     .uuid('请选择分类'),
 
-  tagIds: z
-    .array(z.string().uuid())
-    .default([]),
+  tagIds: z.array(z.string().uuid())
 })
 
 export type PostFormData = z.infer<typeof postFormSchema>

@@ -97,7 +97,8 @@ export const postsToTags = pgTable(
 )
 
 // 评论表
-export const comments = pgTable('comments', {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const comments: any = pgTable('comments', {
   id: uuid('id').primaryKey().defaultRandom(),
   content: text('content').notNull(),
   authorId: uuid('author_id')
@@ -106,7 +107,7 @@ export const comments = pgTable('comments', {
   postId: uuid('post_id')
     .notNull()
     .references(() => posts.id, { onDelete: 'cascade' }),
-  parentId: uuid('parent_id').references(() => comments.id),
+  parentId: uuid('parent_id'),
   likesCount: integer('likes_count').default(0).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),

@@ -40,9 +40,9 @@ declare module 'next-auth/jwt' {
 
 export const authConfig: NextAuthOptions = {
   providers: [
-    GitHub({
-      clientId: process.env.GITHUB_ID!,
-      clientSecret: process.env.GITHUB_SECRET!,
+    ...(process.env.GITHUB_ID && process.env.GITHUB_SECRET ? [GitHub({
+      clientId: process.env.GITHUB_ID,
+      clientSecret: process.env.GITHUB_SECRET,
       profile(profile) {
         return {
           id: profile.id.toString(),
@@ -53,10 +53,10 @@ export const authConfig: NextAuthOptions = {
           role: 'USER',
         }
       },
-    }),
-    Google({
-      clientId: process.env.GOOGLE_ID!,
-      clientSecret: process.env.GOOGLE_SECRET!,
+    })] : []),
+    ...(process.env.GOOGLE_ID && process.env.GOOGLE_SECRET ? [Google({
+      clientId: process.env.GOOGLE_ID,
+      clientSecret: process.env.GOOGLE_SECRET,
       profile(profile) {
         return {
           id: profile.sub,
@@ -67,7 +67,7 @@ export const authConfig: NextAuthOptions = {
           role: 'USER',
         }
       },
-    }),
+    })] : []),
     Credentials({
       name: 'credentials',
       credentials: {

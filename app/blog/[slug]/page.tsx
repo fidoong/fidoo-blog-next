@@ -46,7 +46,7 @@ export default async function PostPage({ params }: PostPageProps) {
             {/* Header */}
             <div className="space-y-4 mb-8">
               <div className="flex items-center gap-2">
-                <Badge variant="secondary">{post.category?.name}</Badge>
+                <Badge variant="secondary">{(post.category as { name?: string })?.name ?? '-'}</Badge>
                 {post.tags.map((tag) => (
                   <Link key={tag.id} href={`/tags/${tag.slug}`}>
                     <Badge variant="outline">#{tag.name}</Badge>
@@ -63,13 +63,13 @@ export default async function PostPage({ params }: PostPageProps) {
               <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={post.author?.avatar || ''} />
+                    <AvatarImage src={(post.author as { avatar?: string })?.avatar || ''} />
                     <AvatarFallback>
-                      {post.author?.name?.[0] || 'U'}
+                      {(post.author as { name?: string })?.name?.[0] || 'U'}
                     </AvatarFallback>
                   </Avatar>
                   <span className="font-medium text-foreground">
-                    {post.author?.name || post.author?.username}
+                    {(post.author as { name?: string })?.name || (post.author as { username?: string })?.username}
                   </span>
                 </div>
                 <Separator orientation="vertical" className="h-4" />
@@ -129,18 +129,18 @@ export default async function PostPage({ params }: PostPageProps) {
             <CardContent className="p-6">
               <div className="flex items-center gap-4 mb-4">
                 <Avatar className="h-12 w-12">
-                  <AvatarImage src={post.author?.avatar || ''} />
+                  <AvatarImage src={(post.author as { avatar?: string })?.avatar || ''} />
                   <AvatarFallback>
-                    {post.author?.name?.[0] || 'U'}
+                    {(post.author as { name?: string })?.name?.[0] || 'U'}
                   </AvatarFallback>
                 </Avatar>
                 <div>
                   <h3 className="font-semibold">
-                    {post.author?.name || post.author?.username}
+                    {(post.author as { name?: string })?.name || (post.author as { username?: string })?.username}
                   </h3>
-                  {post.author?.bio && (
+                  {(post.author as { bio?: string })?.bio && (
                     <p className="text-sm text-muted-foreground line-clamp-2">
-                      {post.author.bio}
+                      {(post.author as { bio?: string }).bio}
                     </p>
                   )}
                 </div>

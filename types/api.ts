@@ -1,4 +1,5 @@
 import { PaginationParams, FilterParams, SortParams } from './index'
+import { PostSummary } from './models'
 
 // ============================================
 // API 响应封装

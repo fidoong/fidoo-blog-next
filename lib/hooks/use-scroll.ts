@@ -22,6 +22,7 @@ export function useScroll(threshold: number = 0) {
     isAtTop: true,
     isAtBottom: false,
   })
+  const prevYRef = { current: 0 }
 
   const handleScroll = useCallback(() => {
     const currentY = window.scrollY
@@ -30,12 +31,14 @@ export function useScroll(threshold: number = 0) {
 
     setPosition({ x: window.scrollX, y: currentY })
 
-    setDirection((prev) => ({
-      isScrollingUp: currentY < prev.y,
-      isScrollingDown: currentY > prev.y,
+    setDirection({
+      isScrollingUp: currentY < prevYRef.current,
+      isScrollingDown: currentY > prevYRef.current,
       isAtTop: currentY <= threshold,
       isAtBottom: currentY >= maxScroll - threshold,
-    }))
+    })
+    
+    prevYRef.current = currentY
   }, [threshold])
 
   useEffect(() => {

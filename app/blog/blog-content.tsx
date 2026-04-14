@@ -1,5 +1,3 @@
-'use cache'
-
 import Link from 'next/link'
 import { getPosts } from '@/lib/actions/posts'
 import { getCategories } from '@/lib/actions/categories'
@@ -50,7 +48,7 @@ export async function BlogContent({ searchParams }: BlogContentProps) {
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center gap-2">
                         <Badge variant="secondary">
-                          {post.category?.name}
+                          {(post.category as { name?: string })?.name ?? '-'}
                         </Badge>
                         <span className="text-sm text-muted-foreground">
                           {post.tags.slice(0, 3).map((tag) => (
@@ -73,13 +71,13 @@ export async function BlogContent({ searchParams }: BlogContentProps) {
                       <div className="flex items-center gap-4 pt-2">
                         <div className="flex items-center gap-2">
                           <Avatar className="h-6 w-6">
-                            <AvatarImage src={post.author?.avatar || ''} />
+                            <AvatarImage src={(post.author as { avatar?: string })?.avatar || ''} />
                             <AvatarFallback>
-                              {post.author?.name?.[0] || 'U'}
+                              {(post.author as { name?: string })?.name?.[0] || 'U'}
                             </AvatarFallback>
                           </Avatar>
                           <span className="text-sm text-muted-foreground">
-                            {post.author?.name || post.author?.username}
+                            {(post.author as { name?: string })?.name || (post.author as { username?: string })?.username}
                           </span>
                         </div>
                         <span className="text-sm text-muted-foreground flex items-center gap-1">

@@ -47,7 +47,7 @@ export function usePrevious<T>(value: T): T | undefined {
     store.subscribe,
     store.getSnapshot,
     () => undefined // SSR 返回 undefined
-  )
+  ) as T | undefined
 }
 
 // 比较值是否变化

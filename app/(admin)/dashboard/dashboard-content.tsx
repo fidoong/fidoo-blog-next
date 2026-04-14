@@ -146,7 +146,7 @@ export async function DashboardContent() {
                       {post.title}
                     </Link>
                     <p className="text-sm text-muted-foreground">
-                      {post.category?.name} · {post.views} 阅读 ·{' '}
+                      {(post.category as { name?: string })?.name ?? '-'} · {post.views} 阅读 ·{' '}
                       {post.published ? '已发布' : '草稿'}
                     </p>
                   </div>

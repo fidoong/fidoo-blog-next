@@ -7,6 +7,9 @@ import { getCategories } from '@/lib/actions/categories'
 import { getTags } from '@/lib/actions/tags'
 import { PostForm } from '@/components/blog/post-form'
 
+// 标记为动态路由，避免预渲染问题
+export const dynamic = 'force-dynamic'
+
 async function getPost(id: string, userId: string) {
   const post = await db.query.posts.findFirst({
     where: eq(posts.id, id),

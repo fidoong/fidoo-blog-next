@@ -21,7 +21,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
-import { Category, Tag } from '@/lib/db/schema'
+import { Category, Tag } from '@/lib/db'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
 
@@ -56,7 +56,7 @@ export function PostForm({ post, categories, allTags }: PostFormProps) {
       coverImage: post?.coverImage || '',
       published: post?.published || false,
       categoryId: post?.categoryId || '',
-      tagIds: post?.tags.map((t) => t.id) || [],
+      tagIds: post?.tags?.map((t) => t.id) || [],
     },
   })
 
@@ -221,6 +221,42 @@ export function PostForm({ post, categories, allTags }: PostFormProps) {
             )}
           />
         </div>
+
+        <FormField
+          control={form.control}
+          name="tagIds"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>标签</FormLabel>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {allTags.map((tag) => {
+                  const isSelected = field.value?.includes(tag.id)
+                  return (
+                    <button
+                      key={tag.id}
+                      type="button"
+                      onClick={() => {
+                        const newValue = isSelected
+                          ? field.value?.filter((id) => id !== tag.id) || []
+                          : [...(field.value || []), tag.id]
+                        field.onChange(newValue)
+                      }}
+                      className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                        isSelected
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted hover:bg-muted/80'
+                      }`}
+                    >
+                      {tag.name}
+                    </button>
+                  )
+                })}
+              </div>
+              <FormDescription>点击选择标签，可多选</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <div>
           <FormLabel>正文内容</FormLabel>
