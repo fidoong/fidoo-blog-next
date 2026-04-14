@@ -1,0 +1,44 @@
+# 依赖
+node_modules
+.pnpm-store
+
+# 构建输出
+.next
+out
+dist
+
+# 环境变量
+.env
+.env.local
+.env.*.local
+
+# 日志
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# 其他
+README.md
+.eslintrc.js
+.prettierrc
+.turbo

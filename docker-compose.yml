@@ -1,0 +1,54 @@
+services:
+  # PostgreSQL 数据库
+  postgres:
+    image: postgres:16-alpine
+    container_name: blog-postgres
+    environment:
+      POSTGRES_USER: blog
+      POSTGRES_PASSWORD: blog_password
+      POSTGRES_DB: blog
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5435:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U blog -d blog"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - blog-network
+
+  # 博客应用
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: blog-app
+    environment:
+      # 数据库连接（使用服务名 postgres 作为主机名）
+      DATABASE_URL: postgresql://blog:blog_password@postgres:5432/blog
+      
+      # NextAuth.js
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: your-super-secret-key-change-this-in-production
+      
+      # OAuth Providers (可选)
+      # GITHUB_ID: your-github-client-id
+      # GITHUB_SECRET: your-github-client-secret
+      # GOOGLE_ID: your-google-client-id
+      # GOOGLE_SECRET: your-google-client-secret
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - blog-network
+
+volumes:
+  postgres_data:
+
+networks:
+  blog-network:
+    driver: bridge
