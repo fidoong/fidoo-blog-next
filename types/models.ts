@@ -55,6 +55,8 @@ export interface Post extends TimestampFields {
 }
 
 // 列表展示用（精简字段）
+export type PostWithRelations = Post
+
 export interface PostSummary {
   id: string
   slug: string
@@ -78,13 +80,13 @@ export interface PostSummary {
 // 分类与标签
 // ============================================
 
-export interface Category extends TimestampFields {
+export interface Category extends Partial<TimestampFields> {
   id: string
   name: string
   slug: string
   description: string | null
   icon: string | null
-  sortOrder: number
+  sortOrder: number | null
   postCount?: number
 }
 

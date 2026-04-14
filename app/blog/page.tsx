@@ -1,21 +1,25 @@
 import { Suspense } from 'react'
 import { BlogContent } from './blog-content'
+import { getCategories } from '@/lib/actions/categories'
 import { Card, CardContent } from '@/components/ui/card'
 
 interface BlogPageProps {
   searchParams: Promise<{
-    page?: string
     category?: string
   }>
 }
 
 export default async function BlogPage({ searchParams }: BlogPageProps) {
   const params = await searchParams
+  const categories = await getCategories()
 
   return (
     <div className="container mx-auto py-8 px-4">
       <Suspense fallback={<BlogSkeleton />}>
-        <BlogContent searchParams={params} />
+        <BlogContent
+          category={params.category}
+          categories={categories}
+        />
       </Suspense>
     </div>
   )
@@ -48,7 +52,10 @@ function BlogSkeleton() {
             <div className="h-6 w-16 bg-muted rounded animate-pulse mb-4" />
             <div className="flex flex-wrap gap-2">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-8 w-16 bg-muted rounded animate-pulse" />
+                <div
+                  key={i}
+                  className="h-8 w-16 bg-muted rounded animate-pulse"
+                />
               ))}
             </div>
           </CardContent>
