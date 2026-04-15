@@ -14,7 +14,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
   const categories = await getCategories()
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <div className="page-container">
       <Suspense fallback={<BlogSkeleton />}>
         <BlogContent
           category={params.category}

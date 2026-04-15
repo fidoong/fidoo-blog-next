@@ -117,6 +117,21 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+@layer components {
+  .page-container {
+    @apply container mx-auto py-8 px-4;
+  }
+  .page-title {
+    @apply text-3xl font-bold;
+  }
+  .card-hover {
+    @apply hover:shadow-md transition-shadow cursor-pointer;
+  }
+  .link-primary {
+    @apply hover:text-primary transition-colors;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

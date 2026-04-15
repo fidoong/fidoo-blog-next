@@ -2,17 +2,18 @@
 
 import { useEffect } from 'react'
 import Link from 'next/link'
-import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, RefreshCw } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { usePosts } from '@/hooks/use-infinite-posts'
 import { useIntersectionObserver } from '@/hooks/use-intersection-observer'
-import { PostCard } from '@/components/blog/post-card'
+import { PostCard } from '@/components/features/post/post-card'
 import {
   PostCardSkeleton,
   LoadMoreSkeleton,
-} from '@/components/blog/post-card-skeleton'
+} from '@/components/shared/skeletons'
+import { EmptyState } from '@/components/shared/empty-state'
+import { ErrorState } from '@/components/shared/error-state'
 import type { Category } from '@/types/models'
 
 interface BlogContentProps {
@@ -56,17 +57,9 @@ export function BlogContent({ category, categories }: BlogContentProps) {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <div className="lg:col-span-3">
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-3xl font-bold">文章列表</h1>
+            <h1 className="page-title">文章列表</h1>
           </div>
-          <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground mb-4">加载失败: {error}</p>
-              <Button onClick={() => refetch()} variant="outline">
-                <RefreshCw className="h-4 w-4 mr-2" />
-                重试
-              </Button>
-            </CardContent>
-          </Card>
+          <ErrorState error={error} onRetry={() => refetch()} />
         </div>
         <Sidebar
           categories={categories}
@@ -83,7 +76,7 @@ export function BlogContent({ category, categories }: BlogContentProps) {
       <div className="lg:col-span-3 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold">文章列表</h1>
+            <h1 className="page-title">文章列表</h1>
             {currentCategory && (
               <Badge variant="secondary">{currentCategory.name}</Badge>
             )}
@@ -98,11 +91,10 @@ export function BlogContent({ category, categories }: BlogContentProps) {
         {isLoading ? (
           <PostCardSkeleton count={5} />
         ) : posts.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center text-muted-foreground">
-              暂无文章
-            </CardContent>
-          </Card>
+          <EmptyState
+            title="暂无文章"
+            description="当前分类下还没有文章，敬请期待"
+          />
         ) : (
           <div className="space-y-3">
             {posts.map((post) => (
@@ -148,8 +140,8 @@ interface SidebarProps {
 function Sidebar({ categories, currentCategory, total }: SidebarProps) {
   return (
     <div className="space-y-6">
-      <Card>
-        <CardContent className="p-4">
+      <div className="rounded-xl border bg-card text-card-foreground shadow">
+        <div className="p-4">
           <h3 className="font-semibold mb-4">分类</h3>
           <div className="flex flex-wrap gap-2">
             <Link href="/blog">
@@ -171,18 +163,18 @@ function Sidebar({ categories, currentCategory, total }: SidebarProps) {
               </Link>
             ))}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {total > 0 && (
-        <Card>
-          <CardContent className="p-4">
+        <div className="rounded-xl border bg-card text-card-foreground shadow">
+          <div className="p-4">
             <h3 className="font-semibold mb-2">统计</h3>
             <p className="text-sm text-muted-foreground">
               共 {total} 篇文章
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
     </div>
   )

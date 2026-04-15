@@ -1,37 +1,25 @@
 'use client'
 
 import { useCallback } from 'react'
-import type { UseFormReturn } from 'react-hook-form'
+import type { UseFormReturn, FieldValues, Path } from 'react-hook-form'
+import { slugify } from '@/lib/utils'
 
-function slugify(text: string, maxLength: number = 50): string {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, maxLength)
+interface UseFormSlugOptions<T extends FieldValues> {
+  form: UseFormReturn<T>
+  sourceField: Path<T>
+  targetField: Path<T>
 }
 
-interface UseFormSlugOptions {
-  form: UseFormReturn<any>
-  sourceField: string
-  targetField: string
-}
-
-/**
- * 表单 Slug 自动生成 Hook
- */
-export function useFormSlug(options: UseFormSlugOptions) {
+export function useFormSlug<T extends FieldValues>(options: UseFormSlugOptions<T>) {
   const { form, sourceField, targetField } = options
 
   const generateSlug = useCallback(() => {
-    const sourceValue = form.getValues(sourceField)
+    const sourceValue = form.getValues(sourceField) as string
     if (!sourceValue) return
 
-    const slug = slugify(sourceValue)
-    form.setValue(targetField, slug)
+    const generated = slugify(sourceValue)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    form.setValue(targetField, generated as any)
   }, [form, sourceField, targetField])
 
   return {

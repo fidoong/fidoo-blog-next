@@ -7,6 +7,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { siteConfig } from '@/config/site'
 import { getPosts } from '@/lib/actions/posts'
 import { Calendar, Eye } from 'lucide-react'
+import { EmptyState } from '@/components/shared/empty-state'
+import { formatDate } from '@/lib/utils'
 
 export default async function HomePage() {
   const { posts } = await getPosts({ page: 1, limit: 6 })
@@ -88,9 +90,10 @@ export default async function HomePage() {
           </div>
 
           {posts.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              暂无文章
-            </div>
+            <EmptyState
+              title="暂无文章"
+              description="还没有发布任何文章，稍后再来看看吧"
+            />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {posts.map((post) => (
@@ -116,7 +119,7 @@ export default async function HomePage() {
                           </Badge>
                         ))}
                       </div>
-                      <h3 className="font-semibold text-lg mb-2 line-clamp-2 hover:text-primary transition-colors">
+                      <h3 className="font-semibold text-lg mb-2 line-clamp-2 link-primary">
                         {post.title}
                       </h3>
                       {post.excerpt && (
@@ -137,7 +140,7 @@ export default async function HomePage() {
                         <div className="flex items-center gap-3 text-xs">
                           <span className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            {new Date(post.createdAt).toLocaleDateString('zh-CN')}
+                            {formatDate(post.createdAt)}
                           </span>
                           <span className="flex items-center gap-1">
                             <Eye className="h-3 w-3" />

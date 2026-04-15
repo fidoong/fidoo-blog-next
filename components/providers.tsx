@@ -5,6 +5,7 @@ import { Toaster } from 'sonner'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { useState } from 'react'
+import { TIME } from '@/lib/constants'
 
 const ThemeProvider = dynamic(
   () => import('next-themes').then((mod) => mod.ThemeProvider),
@@ -15,8 +16,8 @@ function makeQueryClient() {
   return new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 60 * 1000,
-        gcTime: 5 * 60 * 1000,
+        staleTime: TIME.CACHE_STALE_TIME,
+        gcTime: TIME.CACHE_GC_TIME,
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
         retry: 1,

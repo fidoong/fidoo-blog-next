@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { transformAdminPostListItem } from '@/types/transformers'
 import type { AdminPostListItem } from '@/types/models'
+import { EmptyState } from '@/components/shared/empty-state'
 
 async function getDashboardStats(userId: string) {
   const [postStats] = await db
@@ -58,7 +59,7 @@ export async function DashboardContent() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">仪表盘</h1>
+        <h1 className="page-title">仪表盘</h1>
         <Link href="/write">
           <Button>
             <FileText className="mr-2 h-4 w-4" />
@@ -132,9 +133,18 @@ export async function DashboardContent() {
         </CardHeader>
         <CardContent>
           {stats.recentPosts.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              还没有文章，开始创作吧！
-            </div>
+            <EmptyState
+              title="还没有文章"
+              description="开始创作你的第一篇文章吧"
+              action={
+                <Link href="/write">
+                  <Button variant="outline">
+                    <FileText className="mr-2 h-4 w-4" />
+                    开始创作
+                  </Button>
+                </Link>
+              }
+            />
           ) : (
             <div className="space-y-4">
               {stats.recentPosts.map((post) => (

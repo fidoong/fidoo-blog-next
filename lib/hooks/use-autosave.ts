@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { TIME } from '@/lib/constants'
 
 interface UseAutosaveOptions<T> {
   enabled: boolean
@@ -24,7 +25,7 @@ interface UseAutosaveReturn {
 export function useAutosave<T>(
   options: UseAutosaveOptions<T>
 ): UseAutosaveReturn {
-  const { enabled, data, key, interval = 30000, onSave } = options
+  const { enabled, data, key, interval = TIME.AUTOSAVE_INTERVAL, onSave } = options
 
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const [isSaving, setIsSaving] = useState(false)

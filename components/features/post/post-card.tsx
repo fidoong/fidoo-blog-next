@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { formatDate } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Calendar, Eye, Heart } from 'lucide-react'
 import type { PostSummary } from '@/types/models'
@@ -57,7 +58,7 @@ export function PostCard({ post }: PostCardProps) {
               </div>
               <span className="text-xs text-muted-foreground flex items-center gap-1">
                 <Calendar className="h-3 w-3" />
-                {new Date(post.createdAt).toLocaleDateString('zh-CN')}
+                {formatDate(post.createdAt)}
               </span>
               <span className="text-xs text-muted-foreground flex items-center gap-1">
                 <Eye className="h-3 w-3" />

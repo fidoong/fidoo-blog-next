@@ -11,11 +11,12 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Calendar, Eye, Clock, Share2 } from 'lucide-react'
+import { formatDate } from '@/lib/utils'
 import { EditorPreview } from '@/components/editor'
-import { ViewTracker } from '@/components/blog/view-tracker'
-import { LikeButton } from '@/components/blog/like-button'
-import { BookmarkButton } from '@/components/blog/bookmark-button'
-import { CommentList } from '@/components/blog/comment-list'
+import { ViewTracker } from '@/components/features/post/view-tracker'
+import { LikeButton } from '@/components/features/post/like-button'
+import { BookmarkButton } from '@/components/features/post/bookmark-button'
+import { CommentList } from '@/components/features/comment/comment-list'
 import type { BlogComment } from '@/types/comments'
 
 interface PostPageProps {
@@ -91,7 +92,7 @@ export default async function PostPage({ params }: PostPageProps) {
   }
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <div className="page-container">
       <ViewTracker slug={slug} />
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Main Content */}
@@ -129,7 +130,7 @@ export default async function PostPage({ params }: PostPageProps) {
                 <Separator orientation="vertical" className="h-4" />
                 <span className="flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
-                  {new Date(post.publishedAt || post.createdAt).toLocaleDateString('zh-CN')}
+                  {formatDate(post.publishedAt || post.createdAt)}
                 </span>
                 <span className="flex items-center gap-1">
                   <Eye className="h-4 w-4" />

@@ -64,23 +64,30 @@ This version has breaking changes — APIs, conventions, and file structure may 
 │   └── globals.css        # 全局样式（Tailwind v4 配置入口）
 ├── components/
 │   ├── ui/                # shadcn/ui 组件
-│   ├── admin/             # 后台专用组件
-│   ├── blog/              # 博客业务组件（PostCard、Comment、LikeButton 等）
+│   ├── features/          # 按功能域组织的业务组件
+│   │   ├── post/          # 文章相关（PostCard、PostForm、LikeButton、BookmarkButton 等）
+│   │   └── comment/       # 评论相关（CommentList、CommentItem、CommentForm）
+│   ├── shared/            # 通用共享组件（EmptyState、ErrorState、LoadingState、Skeletons）
 │   ├── editor/            # Markdown 编辑器相关
 │   ├── layout/            # Header、Footer
-│   ├── shared/            # 通用共享组件
-│   ├── providers.tsx      # ThemeProvider + Toaster 包装器
+│   ├── providers.tsx      # QueryClientProvider + ThemeProvider + Toaster + ReactQueryDevtools
 │   └── session-provider.tsx
 ├── lib/
 │   ├── actions/           # Server Actions（posts、comments、likes、bookmarks、categories、tags）
 │   ├── auth/              # 认证配置、RBAC、服务端权限检查
 │   ├── db/                # 数据库连接（node-postgres Pool）与 Schema
-│   ├── hooks/             # 自定义 React Hooks
+│   ├── hooks/             # 自定义 React Hooks（业务 Hooks + TanStack Query Hooks）
+│   ├── repositories/      # Repository 层（数据查询抽象）
+│   ├── constants/         # 设计令牌、路由常量、应用配置常量
 │   ├── stores/            # Zustand stores
 │   ├── validations/       # Zod 校验 Schema（与 types/forms.ts 配合使用）
-│   └── utils.ts           # `cn()` 工具函数
+│   └── utils/             # 工具函数（cn、slugify、date、reading-time、validation、error）
 ├── config/                # 站点配置（site.ts、nav.ts）
 ├── types/                 # TypeScript 类型定义
+│   ├── models.ts          # 精确领域模型类型
+│   ├── forms.ts           # Zod 表单 Schema
+│   ├── transformers.ts    # 数据转换函数（Drizzle → Domain）
+│   └── comments.ts        # 评论相关类型
 ├── scripts/               # 数据库种子脚本等
 ├── proxy.ts               # 替代 middleware.ts 的请求拦截器
 ├── drizzle.config.ts      # Drizzle Kit 配置
@@ -102,7 +109,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 pnpm dev              # 启动开发服务器（Turbopack）
 
 # 构建与运行
-pnpm build            # 生产构建
+NEXT_TELEMETRY_DISABLED=1 pnpm build   # 生产构建（禁用遥测）
 pnpm start            # 启动生产服务器
 
 # 代码检查
@@ -145,18 +152,24 @@ pnpm docker:build     # 构建 Docker 镜像
 - 使用 `@import "tailwindcss"` 和 `@theme inline` 语法
 - 主题变量同时支持 `:root`（亮色）和 `.dark`（暗色）
 - 组件 class 组合统一使用 `cn()` 工具（`clsx` + `tailwind-merge`）
+- 通用样式类定义在 `app/globals.css` 的 `@layer components` 中（如 `.page-container`、`.card-hover`、`.link-primary`）
 
 ### 组件规范
 
 - **shadcn/ui 组件**：存放在 `components/ui/`，通过 `npx shadcn add` 管理
 - **Base UI 限制**：组件不支持 `asChild` prop。如需按钮链接，使用 `<Link href="..."><Button>...</Button></Link>` 模式，不要用 `<Button asChild>`
 - **异步页面组件**：所有异步页面（`async function Page()`）需要在合适位置提供 `Suspense` 边界
+- **业务组件**：按功能域放在 `components/features/{post,comment}/`
+- **共享组件**：纯展示逻辑组件放在 `components/shared/`
 
 ### 数据获取
 
 - **写操作（增删改）**：统一放在 `lib/actions/*.ts`，使用 Server Actions
-- **读操作**：页面级数据获取可直接在 `page.tsx` 中调用 `db.query` 或 Server Actions
-- **缓存刷新**：Server Actions 中使用 `revalidatePath()` 清除页面缓存
+- **读操作**：
+  - 页面级数据获取可直接在 `page.tsx` 中调用 Server Actions
+  - 复杂查询逻辑下沉到 `lib/repositories/*.ts`，由 Server Actions 调用
+- **客户端数据获取**：使用 TanStack Query（`useInfiniteQuery`、`useMutation` 等）
+- **缓存刷新**：Server Actions 中使用 `revalidatePath()` 清除页面缓存；客户端缓存由 TanStack Query 自动管理
 
 ---
 

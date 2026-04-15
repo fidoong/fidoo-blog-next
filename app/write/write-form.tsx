@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { MarkdownEditor } from '@/components/editor'
 import { Button } from '@/components/ui/button'
@@ -35,7 +34,6 @@ interface WriteFormProps {
 }
 
 export function WriteForm({ categories, allTags, user }: WriteFormProps) {
-  const router = useRouter()
   const [showSettings, setShowSettings] = useState(false)
   const [isDraftSaving, setIsDraftSaving] = useState(false)
 

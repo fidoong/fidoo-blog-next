@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tag, BookOpen, TrendingUp } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { EmptyState } from '@/components/shared/empty-state'
 
 export const metadata = {
   title: '标签 | Fidoo Blog',
@@ -52,7 +53,7 @@ export default async function TagsPage() {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {popularTags.map((tag) => (
                 <Link key={tag.id} href={`/tags/${tag.slug}`}>
-                  <Card className="hover:shadow-md transition-shadow cursor-pointer group">
+                  <Card className="card-hover group">
                     <CardContent className="p-4 flex items-center justify-between">
                       <span className="font-medium group-hover:text-primary transition-colors">
                         #{tag.name}
@@ -87,13 +88,11 @@ export default async function TagsPage() {
         </Tabs>
 
         {allTags.length === 0 && (
-          <div className="text-center py-16">
-            <BookOpen className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
-            <h3 className="text-lg font-medium mb-2">暂无标签</h3>
-            <p className="text-muted-foreground">
-              标签将在文章发布时自动创建
-            </p>
-          </div>
+          <EmptyState
+            icon={BookOpen}
+            title="暂无标签"
+            description="标签将在文章发布时自动创建"
+          />
         )}
       </div>
     </div>

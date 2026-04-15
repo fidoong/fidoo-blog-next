@@ -17,6 +17,8 @@ import { Plus, Edit2, Trash2 } from 'lucide-react'
 import { deletePost } from '@/lib/actions/posts'
 import { transformAdminPostListItem } from '@/types/transformers'
 import type { AdminPostListItem } from '@/types/models'
+import { EmptyState } from '@/components/shared/empty-state'
+import { formatDate } from '@/lib/utils'
 
 async function getUserPosts(userId: string): Promise<AdminPostListItem[]> {
   const rawPosts = await db.query.posts.findMany({
@@ -37,7 +39,7 @@ export async function PostsContent() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">文章管理</h1>
+        <h1 className="page-title">文章管理</h1>
         <Link href="/write">
           <Button>
             <Plus className="mr-2 h-4 w-4" />
@@ -62,10 +64,18 @@ export async function PostsContent() {
             {postsList.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8">
-                  还没有文章，
-                  <Link href="/write" className="text-primary hover:underline">
-                    开始创作
-                  </Link>
+                  <EmptyState
+                    title="还没有文章"
+                    description="开始创作你的第一篇文章吧"
+                    action={
+                      <Link href="/write">
+                        <Button variant="outline">
+                          <Plus className="mr-2 h-4 w-4" />
+                          开始创作
+                        </Button>
+                      </Link>
+                    }
+                  />
                 </TableCell>
               </TableRow>
             ) : (
@@ -88,7 +98,7 @@ export async function PostsContent() {
                   </TableCell>
                   <TableCell>{post.views}</TableCell>
                   <TableCell>
-                    {new Date(post.createdAt).toLocaleDateString('zh-CN')}
+                    {formatDate(post.createdAt)}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">

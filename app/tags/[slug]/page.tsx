@@ -6,7 +6,9 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Calendar, Eye, ArrowLeft } from 'lucide-react'
+import { formatDate } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/shared/empty-state'
 
 interface TagPageProps {
   params: Promise<{
@@ -39,7 +41,7 @@ export default async function TagPage({ params }: TagPageProps) {
   const { posts, total } = await getPostsByTagSlug(slug)
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <div className="page-container">
       <div className="max-w-4xl mx-auto">
         {/* Back Button */}
         <Link href="/tags">
@@ -62,18 +64,19 @@ export default async function TagPage({ params }: TagPageProps) {
 
         {/* Posts List */}
         {posts.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-muted-foreground">该标签下暂无文章</p>
-          </div>
+          <EmptyState
+            title="该标签下暂无文章"
+            description="这个标签还没有关联的文章"
+          />
         ) : (
           <div className="space-y-4">
             {posts.map((post) => (
               <Link key={post.id} href={`/blog/${post.slug}`}>
-                <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                <Card className="card-hover">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
-                        <h3 className="text-xl font-semibold mb-2 hover:text-primary transition-colors">
+                        <h3 className="text-xl font-semibold mb-2 link-primary">
                           {post.title}
                         </h3>
                         {post.excerpt && (
@@ -93,7 +96,7 @@ export default async function TagPage({ params }: TagPageProps) {
                           </div>
                           <span className="flex items-center gap-1">
                             <Calendar className="h-4 w-4" />
-                            {new Date(post.createdAt).toLocaleDateString('zh-CN')}
+                            {formatDate(post.createdAt)}
                           </span>
                           <span className="flex items-center gap-1">
                             <Eye className="h-4 w-4" />

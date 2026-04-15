@@ -7,9 +7,7 @@ import { toast } from 'sonner'
 import { CommentForm } from './comment-form'
 import { deleteComment, toggleCommentLike } from '@/lib/actions/comments'
 import { Heart, MessageCircle, Trash2 } from 'lucide-react'
-import { formatDistanceToNow } from 'date-fns'
-import { zhCN } from 'date-fns/locale'
-import { cn } from '@/lib/utils'
+import { cn, formatRelativeTime, handleError, isUnauthorizedError } from '@/lib/utils'
 import type { BlogComment } from '@/types/comments'
 
 interface CommentItemProps {
@@ -38,14 +36,10 @@ export function CommentItem({ comment, currentUserId, depth = 0, likedCommentIds
         toast.success(result.liked ? '点赞成功' : '取消点赞')
       } catch (error) {
         console.error('Comment like error:', error)
-        if (error instanceof Error) {
-          if (error.message.includes('Unauthorized')) {
-            toast.error('请先登录后再点赞')
-          } else {
-            toast.error(`点赞失败: ${error.message}`)
-          }
+        if (isUnauthorizedError(error)) {
+          toast.error('请先登录后再点赞')
         } else {
-          toast.error('点赞失败，请重试')
+          toast.error(`点赞失败: ${handleError(error)}`)
         }
       }
     })
@@ -86,10 +80,7 @@ export function CommentItem({ comment, currentUserId, depth = 0, likedCommentIds
               {comment.author.name || comment.author.username}
             </span>
             <span className="text-xs text-muted-foreground">
-              {formatDistanceToNow(new Date(comment.createdAt), {
-                addSuffix: true,
-                locale: zhCN,
-              })}
+              {formatRelativeTime(comment.createdAt)}
             </span>
           </div>
           <p className="text-sm leading-relaxed break-words">{comment.content}</p>

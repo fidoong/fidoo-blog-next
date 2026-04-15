@@ -3,7 +3,7 @@ import { auth } from '@/lib/auth'
 import { getPost } from '@/lib/actions/posts'
 import { getCategories } from '@/lib/actions/categories'
 import { getTags } from '@/lib/actions/tags'
-import { PostForm } from '@/components/blog/post-form'
+import { PostForm } from '@/components/features/post/post-form'
 
 interface EditPostPageProps {
   params: Promise<{
