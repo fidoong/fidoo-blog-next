@@ -1,970 +1,1218 @@
 import { db, pool } from '@/lib/db'
-import { users, categories, tags, posts, postsToTags } from '@/lib/db/schema'
+import {
+  users,
+  categories,
+  tags,
+  posts,
+  postsToTags,
+  comments,
+  likes,
+  commentLikes,
+  bookmarks,
+  follows,
+} from '@/lib/db/schema'
 import bcrypt from 'bcryptjs'
 
-// Unsplash 图片 - 各种主题的高质量图片
 const coverImages = {
   tech: [
-    'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&q=80', // code
-    'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&q=80', // laptop
-    'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&q=80', // coding
-    'https://images.unsplash.com/photo-1504639725590-34d0984388bd?w=800&q=80', // tech
-    'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800&q=80', // team
-    'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&q=80', // programming
-    'https://images.unsplash.com/photo-1537498425277-c283d32ef9db?w=800&q=80', // AI
-    'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&q=80', // network
+    'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&q=80',
+    'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&q=80',
+    'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&q=80',
+    'https://images.unsplash.com/photo-1504639725590-34d0984388bd?w=800&q=80',
+    'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800&q=80',
+    'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&q=80',
+    'https://images.unsplash.com/photo-1537498425277-c283d32ef9db?w=800&q=80',
+    'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&q=80',
+    'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80',
+    'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=800&q=80',
   ],
   life: [
-    'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80', // mountain
-    'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&q=80', // lake
-    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80', // coffee
-    'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&q=80', // workspace
-    'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=800&q=80', // books
-    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80', // beach
+    'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
+    'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&q=80',
+    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80',
+    'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&q=80',
+    'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=800&q=80',
+    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80',
+    'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=80',
   ],
   design: [
-    'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=800&q=80', // design
-    'https://images.unsplash.com/photo-1558655146-9f40138edfeb?w=800&q=80', // creative
-    'https://images.unsplash.com/photo-1542744094-3a31f272c490?w=800&q=80', // UI
-    'https://images.unsplash.com/photo-1545235617-9465d2a55698?w=800&q=80', // wireframe
-  ]
+    'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=800&q=80',
+    'https://images.unsplash.com/photo-1558655146-9f40138edfeb?w=800&q=80',
+    'https://images.unsplash.com/photo-1542744094-3a31f272c490?w=800&q=80',
+    'https://images.unsplash.com/photo-1545235617-9465d2a55698?w=800&q=80',
+    'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80',
+  ],
+  ai: [
+    'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&q=80',
+    'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=800&q=80',
+    'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800&q=80',
+  ],
+}
+
+function estimateReadingTime(content: string) {
+  return Math.max(1, Math.ceil(content.length / 250))
+}
+
+function createPostMarkdown(title: string, sections: { h2: string; bullets: string[] }[]) {
+  let md = `# ${title}\n\n`
+  for (const s of sections) {
+    md += `## ${s.h2}\n\n`
+    for (const b of s.bullets) md += `- ${b}\n`
+    md += '\n'
+  }
+  return md
 }
 
 async function seed() {
   console.log('🌱 Seeding database...')
 
-  try {
-    // Create admin user
-    const adminPassword = await bcrypt.hash('admin123', 10)
-    const adminResult = await db.insert(users).values({
+  const adminPassword = await bcrypt.hash('admin123', 10)
+  const userPassword = await bcrypt.hash('password123', 10)
+
+  // ==================== Users ====================
+  const userSeeds = [
+    {
       email: 'admin@example.com',
       username: 'admin',
       name: 'Administrator',
-      role: 'ADMIN',
+      role: 'ADMIN' as const,
       passwordHash: adminPassword,
-    }).onConflictDoNothing().returning({ id: users.id })
-    
-    if (adminResult.length > 0) {
-      console.log('✅ Admin user created (admin@example.com / admin123)')
-    } else {
-      console.log('ℹ️ Admin user already exists, skipping')
-    }
-
-    // Create default categories
-    const defaultCategories = [
-      { name: '技术', slug: 'tech', description: '技术文章和教程', icon: '💻' },
-      { name: '生活', slug: 'life', description: '生活随笔和感悟', icon: '🌟' },
-      { name: '随笔', slug: 'notes', description: '随手记录和想法', icon: '📝' },
-      { name: '设计', slug: 'design', description: '设计与创意', icon: '🎨' },
-      { name: '后端', slug: 'backend', description: '后端开发技术', icon: '⚙️' },
-    ]
-    
-    let categoriesCreated = 0
-    for (const cat of defaultCategories) {
-      const result = await db.insert(categories).values(cat).onConflictDoNothing().returning({ id: categories.id })
-      if (result.length > 0) categoriesCreated++
-    }
-    console.log(`✅ ${categoriesCreated} categories created`)
-
-    // Create more tags
-    const defaultTags = [
-      { name: 'React', slug: 'react', description: 'React 相关' },
-      { name: 'Next.js', slug: 'nextjs', description: 'Next.js 相关' },
-      { name: 'TypeScript', slug: 'typescript', description: 'TypeScript 相关' },
-      { name: 'Node.js', slug: 'nodejs', description: 'Node.js 相关' },
-      { name: '数据库', slug: 'database', description: '数据库相关' },
-      { name: 'CSS', slug: 'css', description: 'CSS 样式' },
-      { name: 'Vue', slug: 'vue', description: 'Vue.js' },
-      { name: 'AI', slug: 'ai', description: '人工智能' },
-      { name: 'Docker', slug: 'docker', description: '容器化' },
-      { name: 'Linux', slug: 'linux', description: 'Linux 系统' },
-      { name: 'Go', slug: 'go', description: 'Go 语言' },
-      { name: 'Python', slug: 'python', description: 'Python' },
-      { name: '阅读', slug: 'reading', description: '阅读笔记' },
-      { name: '旅行', slug: 'travel', description: '旅行日记' },
-      { name: 'UI设计', slug: 'ui-design', description: 'UI 设计' },
-    ]
-    
-    let tagsCreated = 0
-    for (const tag of defaultTags) {
-      const result = await db.insert(tags).values(tag).onConflictDoNothing().returning({ id: tags.id })
-      if (result.length > 0) tagsCreated++
-    }
-    console.log(`✅ ${tagsCreated} tags created`)
-
-    // Get admin user and categories for creating posts
-    const adminUser = await db.query.users.findFirst({
-      where: (users, { eq }) => eq(users.username, 'admin'),
-    })
-    
-    const allCategories = await db.query.categories.findMany()
-    const allTags = await db.query.tags.findMany()
-    
-    const getTagIds = (slugs: string[]) => allTags.filter(t => slugs.includes(t.slug)).map(t => t.id)
-    
-    if (adminUser && allCategories.length > 0) {
-      const techCategory = allCategories.find(c => c.slug === 'tech')?.id || allCategories[0].id
-      const lifeCategory = allCategories.find(c => c.slug === 'life')?.id || allCategories[0].id
-      const notesCategory = allCategories.find(c => c.slug === 'notes')?.id || allCategories[0].id
-      const designCategory = allCategories.find(c => c.slug === 'design')?.id || allCategories[0].id
-      const backendCategory = allCategories.find(c => c.slug === 'backend')?.id || allCategories[0].id
-
-      // Create sample posts with covers
-      const samplePosts = [
-        // ========== 技术文章 ==========
-        {
-          title: 'Next.js 16 新特性详解：Turbopack 完全指南',
-          slug: 'nextjs-16-features-turbopack',
-          excerpt: '深入了解 Next.js 16 带来的革命性变化，包括 Turbopack 稳定版、Server Actions 改进等。',
-          content: `# Next.js 16 新特性详解：Turbopack 完全指南
-
-Next.js 16 带来了很多令人兴奋的新特性，让我们一起来看看：
-
-## Turbopack 稳定版
-
-Turbopack 现在已经稳定，比 Webpack 快 700 倍，比 Vite 快 10 倍。它使用 Rust 编写，为开发环境提供了极致的性能体验。
-
-## Server Actions 改进
-
-Server Actions 现在支持更多场景，让服务端交互更加简单。我们可以直接在组件中调用服务端函数，无需创建额外的 API 路由。
-
-## 部分预渲染（Partial Prerendering）
-
-这是一个革命性的功能，允许静态页面中嵌入动态内容，实现最佳的用户体验。
-
-## 总结
-
-Next.js 16 是一个值得升级的版本，它带来了更好的开发体验和更快的构建速度。`,
-          categoryId: techCategory,
-          tagIds: getTagIds(['nextjs', 'react']),
-          published: true,
-          views: 1289,
-          coverImage: coverImages.tech[0],
-        },
-        {
-          title: 'TypeScript 5.8 新功能与最佳实践',
-          slug: 'typescript-5-8-features',
-          excerpt: 'TypeScript 5.8 带来了更强大的类型推断和新的语法特性，让代码更加健壮。',
-          content: `# TypeScript 5.8 新功能与最佳实践
-
-TypeScript 5.8 正式发布，带来了多项改进，让我们的开发体验更上一层楼。
-
-## 更智能的类型推断
-
-编译器现在能更好地理解代码意图，特别是在处理条件类型和泛型时。这使得我们可以编写更简洁的代码，而不需要显式的类型注解。
-
-## 性能优化
-
-编译速度提升了 15%，这对于大型项目来说意义重大。更快的编译速度意味着更短的反馈循环，提高开发效率。
-
-## 新的语法特性
-
-- 更好的装饰器支持
-- 改进的 JSDoc 解析
-- 更严格的类型检查选项
-
-## 实际应用
-
-在实际项目中，我们可以利用这些新特性来重构代码，使其更加类型安全。`,
-          categoryId: techCategory,
-          tagIds: getTagIds(['typescript', 'nodejs']),
-          published: true,
-          views: 892,
-          coverImage: coverImages.tech[1],
-        },
-        {
-          title: 'React Server Components 深入解析',
-          slug: 'react-server-components-deep-dive',
-          excerpt: '深入理解 React Server Components 的工作原理，以及如何在项目中正确使用。',
-          content: `# React Server Components 深入解析
-
-React Server Components（RSC）是 React 生态系统中的一个重要创新，它改变了我们构建 React 应用的方式。
-
-## 什么是 Server Components
-
-Server Components 是在服务器端渲染的 React 组件，它们不会向客户端发送任何 JavaScript 代码。这意味着更小的 bundle 体积和更快的首屏加载速度。
-
-## 与 Client Components 的区别
-
-- Server Components 可以访问服务器端资源（数据库、文件系统等）
-- Client Components 可以访问浏览器 API 和 React 状态
-- 两者可以无缝组合使用
-
-## 最佳实践
-
-1. 尽可能使用 Server Components
-2. 只在需要客户端交互的地方使用 Client Components
-3. 合理规划组件边界
-
-## 性能优势
-
-通过减少发送到客户端的 JavaScript，我们可以显著提高应用的加载性能。`,
-          categoryId: techCategory,
-          tagIds: getTagIds(['react', 'nextjs']),
-          published: true,
-          views: 2156,
-          coverImage: coverImages.tech[2],
-        },
-        {
-          title: 'Docker 容器化部署完全指南',
-          slug: 'docker-deployment-guide',
-          excerpt: '从零开始学习 Docker，掌握容器化部署的核心概念和实战技巧。',
-          content: `# Docker 容器化部署完全指南
-
-Docker 已经成为现代应用部署的标准工具。本文将带你从零开始，掌握 Docker 的核心概念。
-
-## 什么是 Docker
-
-Docker 是一个开源的容器化平台，它允许开发者将应用及其依赖打包到一个轻量级、可移植的容器中。
-
-## 核心概念
-
-- **镜像（Image）**：应用的只读模板
-- **容器（Container）**：镜像的运行实例
-- **Dockerfile**：定义镜像构建步骤的脚本
-- **Docker Compose**：多容器编排工具
-
-## 实战示例
-
-让我们创建一个简单的 Node.js 应用的 Docker 配置：
-
-\`\`\`dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm install
-COPY . .
-EXPOSE 3000
-CMD ["npm", "start"]
-\`\`\`
-
-## 部署策略
-
-学习如何使用 Docker Swarm 或 Kubernetes 进行大规模容器编排。`,
-          categoryId: backendCategory,
-          tagIds: getTagIds(['docker', 'nodejs', 'linux']),
-          published: true,
-          views: 1567,
-          coverImage: coverImages.tech[5],
-        },
-        {
-          title: 'PostgreSQL vs MySQL：2024年如何选择',
-          slug: 'postgresql-vs-mysql-2024',
-          excerpt: '对比两款最流行的开源数据库，从性能、功能、生态等多角度分析，帮助你做出正确选择。',
-          content: `# PostgreSQL vs MySQL：2024年如何选择
-
-选择正确的数据库对项目的成功至关重要。让我们深入对比这两款最流行的开源数据库。
-
-## PostgreSQL 优势
-
-- **更强大的 SQL 支持**：完整的 SQL 标准实现
-- **高级数据类型**：数组、JSON、地理信息等
-- **更好的扩展性**：支持自定义类型、函数、操作符
-- **并发控制**：MVCC 实现更加成熟
-
-## MySQL 优势
-
-- **简单易用**：学习曲线平缓
-- **广泛的社区支持**：丰富的文档和工具
-- **成熟的生态系统**：大量的第三方解决方案
-- **复制功能**：主从复制配置简单
-
-## 性能对比
-
-在大多数场景下，两者的性能差异不大。但在特定场景下：
-- 复杂查询：PostgreSQL 更优
-- 简单读写：MySQL 略快
-
-## 结论
-
-- 选择 PostgreSQL：复杂应用、地理信息、需要高级功能
-- 选择 MySQL：简单应用、快速开发、已有 MySQL 生态`,
-          categoryId: backendCategory,
-          tagIds: getTagIds(['database', 'nodejs']),
-          published: true,
-          views: 3421,
-          coverImage: coverImages.tech[3],
-        },
-        {
-          title: 'Tailwind CSS 4.0 新特性实战',
-          slug: 'tailwind-css-4-features',
-          excerpt: '探索 Tailwind CSS 4.0 的重大更新，包括更快的构建速度和新的主题系统。',
-          content: `# Tailwind CSS 4.0 新特性实战
-
-Tailwind CSS 4.0 是一个里程碑版本，带来了许多令人期待的改进。
-
-## 零配置
-
-新版本的核心理念是"零配置"。不再需要 tailwind.config.js，所有配置都可以通过 CSS 变量完成。
-
-## 更快的构建速度
-
-基于 Rust 的新引擎让构建速度提升了 10 倍，即使是大型项目也能在毫秒级完成构建。
-
-## 新的主题系统
-
-更加灵活的主题系统，支持：
-- CSS 变量主题
-- 运行时主题切换
-- 更简单的暗色模式配置
-
-## 迁移指南
-
-从 v3 迁移到 v4 的步骤：
-1. 更新依赖
-2. 转换配置文件
-3. 测试和调试
-
-## 实战项目
-
-让我们用一个真实的项目来演示新特性的使用。`,
-          categoryId: techCategory,
-          tagIds: getTagIds(['css', 'react']),
-          published: true,
-          views: 1876,
-          coverImage: coverImages.tech[4],
-        },
-        {
-          title: 'Go 语言微服务架构实战',
-          slug: 'go-microservices-architecture',
-          excerpt: '使用 Go 语言构建高性能微服务，包括服务发现、负载均衡和分布式追踪。',
-          content: `# Go 语言微服务架构实战
-
-Go 语言因其出色的性能和并发支持，成为构建微服务的理想选择。
-
-## 为什么选择 Go
-
-- **编译速度快**：快速迭代开发
-- **二进制部署**：单文件部署，无依赖
-- **并发原生支持**：goroutine 和 channel
-- **性能优秀**：接近 C++ 的性能
-
-## 微服务组件
-
-### 服务发现
-使用 Consul 或 etcd 实现服务注册和发现。
-
-### API 网关
-使用 Kong 或自研网关统一处理认证、限流、日志。
-
-### 通信协议
-- gRPC 用于内部服务通信
-- REST/HTTP 用于外部接口
-
-## 监控和追踪
-
-集成 Prometheus 和 Jaeger，实现全面的可观测性。`,
-          categoryId: backendCategory,
-          tagIds: getTagIds(['go', 'docker']),
-          published: true,
-          views: 2341,
-          coverImage: coverImages.tech[6],
-        },
-        {
-          title: 'AI 辅助编程：ChatGPT 与 Copilot 对比',
-          slug: 'ai-coding-assistant-comparison',
-          excerpt: '深度对比主流 AI 编程助手，看看哪个更适合你的开发 workflow。',
-          content: `# AI 辅助编程：ChatGPT 与 Copilot 对比
-
-AI 正在改变编程的方式。让我们深入对比两款最流行的 AI 编程助手。
-
-## GitHub Copilot
-
-### 优势
-- 实时代码补全
-- 深度集成 IDE
-- 基于上下文理解
-
-### 适用场景
-- 日常编码
-- 重复性代码
-- 学习新 API
-
-## ChatGPT / Claude
-
-### 优势
-- 更长的上下文
-- 可以解释代码
-- 帮助设计架构
-
-### 适用场景
-- 代码审查
-- 架构设计
-- 学习和教学
-
-## 实际测试
-
-我们在几个真实场景下测试了两者的表现：
-1. 算法实现
-2. 调试帮助
-3. 代码重构
-4. 文档生成
-
-## 最佳实践
-
-结合使用两者，发挥各自优势。`,
-          categoryId: techCategory,
-          tagIds: getTagIds(['ai', 'typescript']),
-          published: true,
-          views: 4521,
-          coverImage: coverImages.tech[7],
-        },
-        // ========== 设计文章 ==========
-        {
-          title: '现代 UI 设计趋势 2024',
-          slug: 'ui-design-trends-2024',
-          excerpt: '探索今年最流行的 UI 设计趋势，包括玻璃拟态、新拟态和极简主义。',
-          content: `# 现代 UI 设计趋势 2024
-
-设计趋势不断演进，了解最新趋势有助于我们创建现代化的用户界面。
-
-## 玻璃拟态（Glassmorphism）
-
-半透明、模糊背景的效果继续流行。它创造了层次感和现代感。
-
-## 新拟态（Neumorphism）
-
-柔和的阴影效果，创造出类似浮雕的视觉效果。适合需要突出材质感的场景。
-
-## 极简主义
-
-少即是多的理念回归。更干净的布局、更多的留白、更克制的配色。
-
-## 动效设计
-
-微交互和页面过渡动画变得更加重要，提升用户体验。
-
-## 工具推荐
-
-- Figma：协作设计
-- Framer：原型制作
-- Rive：复杂动画`,
-          categoryId: designCategory,
-          tagIds: getTagIds(['ui-design', 'css']),
-          published: true,
-          views: 1654,
-          coverImage: coverImages.design[0],
-        },
-        {
-          title: '设计系统的构建与维护',
-          slug: 'design-system-guide',
-          excerpt: '从 0 到 1 构建企业级设计系统，包括组件库、设计令牌和文档规范。',
-          content: `# 设计系统的构建与维护
-
-一个优秀的设计系统可以提高团队协作效率，保证产品一致性。
-
-## 什么是设计系统
-
-设计系统是一组可复用的组件和清晰的标准，由组织根据既定规则构建，以支持数字产品的开发。
-
-## 核心组成部分
-
-### 设计令牌（Design Tokens）
-- 颜色
-- 字体
-- 间距
-- 圆角
-
-### 组件库
-- 基础组件：Button、Input、Card
-- 复合组件：Modal、Form、Table
-- 业务组件：ProductCard、UserProfile
-
-### 文档和指南
-- 使用规范
-- 设计原则
-- 最佳实践
-
-## 实施策略
-
-1. 从小规模开始
-2. 逐步扩展
-3. 持续迭代
-4. 团队培训`,
-          categoryId: designCategory,
-          tagIds: getTagIds(['ui-design', 'react']),
-          published: true,
-          views: 987,
-          coverImage: coverImages.design[1],
-        },
-        // ========== 生活文章 ==========
-        {
-          title: '我的编程学习之路：从零到全栈',
-          slug: 'my-coding-journey-fullstack',
-          excerpt: '从初学者到全栈开发者的成长历程，分享我的经验和心得，希望能给你一些启发。',
-          content: `# 我的编程学习之路：从零到全栈
-
-回顾这几年的编程学习历程，有很多想分享的。希望我的经验能帮助到正在学习编程的你。
-
-## 入门阶段（2019）
-
-最初学习 HTML/CSS/JavaScript，做了很多小项目：
-- 个人简历网站
-- Todo 应用
-- 天气查询应用
-
-## 迷茫期
-
-学习了一段时间后，感到迷茫。前端框架这么多，该选哪个？
-
-最终选择了 React，因为它的社区活跃，工作机会多。
-
-## 进阶成长（2020-2021）
-
-后来学习 React、Node.js，开始接触全栈开发。
-
-- 完成第一个商业项目
-- 开始写技术博客
-- 参与开源项目
-
-## 心得体会
-
-1. **坚持练习**：编程是技能，需要大量练习
-2. **项目驱动**：通过实际项目学习效果最好
-3. **社区参与**：多和他人交流，进步更快
-4. **持续学习**：技术更新快，保持好奇心`,
-          categoryId: lifeCategory,
-          tagIds: getTagIds(['reading', 'react', 'nodejs']),
-          published: true,
-          views: 3256,
-          coverImage: coverImages.life[2],
-        },
-        {
-          title: '远程工作三年：我的经验与反思',
-          slug: 'remote-work-3-years',
-          excerpt: '疫情后远程工作成为常态，分享我三年远程工作的真实体验和心得。',
-          content: `# 远程工作三年：我的经验与反思
-
-远程工作改变了我的生活方式。三年来，我经历了很多，也学到了很多。
-
-## 优点
-
-### 时间灵活
-可以自由安排工作时间，避开高峰期，提高效率。
-
-### 节省通勤
-每天节省 2 小时通勤时间，可以更好地平衡工作与生活。
-
-### 环境舒适
-在家可以打造最适合自己的工作环境。
-
-## 挑战
-
-### 沟通成本
-文字沟通效率低，容易产生误解。
-
-### 边界模糊
-工作和生活的界限变得模糊，容易过度工作。
-
-### 孤独感
-缺少面对面交流，有时会感到孤独。
-
-## 我的解决方案
-
-1. 建立固定的工作时间表
-2. 设置专门的办公空间
-3. 定期参加线下活动
-4. 主动与同事视频交流
-
-## 总结
-
-远程工作需要自律，但也能带来更好的生活质量。`,
-          categoryId: lifeCategory,
-          tagIds: getTagIds(['life', 'reading']),
-          published: true,
-          views: 2134,
-          coverImage: coverImages.life[0],
-        },
-        {
-          title: '程序员的咖啡指南',
-          slug: 'programmer-coffee-guide',
-          excerpt: '作为程序员，咖啡是续命神器。分享我的咖啡入门指南和冲煮心得。',
-          content: `# 程序员的咖啡指南
-
-写代码和喝咖啡似乎是绝配。让我分享一些咖啡入门知识。
-
-## 咖啡豆的选择
-
-### 产区风味
-- **埃塞俄比亚**：花香、果酸
-- **哥伦比亚**：平衡、坚果
-- **巴西**：醇厚、巧克力
-
-### 烘焙度
-- 浅烘：酸度高，风味丰富
-- 中烘：平衡，适合入门
-- 深烘：苦味重，提神效果好
-
-## 冲煮方法
-
-### 手冲
-最纯粹的方式，可以体验咖啡豆的原始风味。
-
-### 意式浓缩
-浓郁强烈，适合制作拿铁、卡布奇诺。
-
-### 冷萃
-低酸度，适合夏天，咖啡因含量高。
-
-## 我的日常
-
-早晨一杯手冲，下午一杯意式，完美的一天。`,
-          categoryId: lifeCategory,
-          tagIds: getTagIds(['life']),
-          published: true,
-          views: 1567,
-          coverImage: coverImages.life[1],
-        },
-        {
-          title: '2024 年技术书单推荐',
-          slug: '2024-tech-book-recommendations',
-          excerpt: '精选今年值得一读的技术书籍，涵盖编程、架构、AI 等多个领域。',
-          content: `# 2024 年技术书单推荐
-
-阅读是提升技术能力的重要途径。这里是我今年读过的几本好书。
-
-## 编程基础
-
-### 《代码整洁之道》
-经典中的经典，教你如何写出可读、可维护的代码。
-
-### 《设计模式：可复用面向对象软件的基础》
-设计模式的圣经，每个程序员都应该读一遍。
-
-## 系统架构
-
-### 《数据密集型应用系统设计》
-深入浅出地讲解分布式系统的核心概念。
-
-### 《构建微服务》
-微服务架构的实战指南。
-
-## AI 与机器学习
-
-### 《动手学深度学习》
-理论与实践结合，适合入门深度学习。
-
-## 软技能
-
-### 《程序员修炼之道》
-不仅是技术，还有职业发展的建议。
-
-## 阅读建议
-
-不要贪多，选择几本深入阅读，实践书中的内容。`,
-          categoryId: lifeCategory,
-          tagIds: getTagIds(['reading', 'ai']),
-          published: true,
-          views: 2890,
-          coverImage: coverImages.life[4],
-        },
-        {
-          title: '周末登山：逃离代码，拥抱自然',
-          slug: 'weekend-hiking-escape',
-          excerpt: '程序员的周末应该怎么过？我的答案是去山里走走，让大脑彻底放松。',
-          content: `# 周末登山：逃离代码，拥抱自然
-
-长时间面对电脑，身心都会疲惫。周末去山里走走，是我最好的放松方式。
-
-## 为什么选择登山
-
-### 身体锻炼
-久坐是程序员的健康杀手。登山可以锻炼全身，特别是心肺功能。
-
-### 大脑休息
-远离屏幕，让大脑从代码中解脱出来。
-
-### 成就感
-登顶的那一刻，所有的疲惫都值得。
-
-## 入门建议
-
-### 装备
-- 舒适的登山鞋
-- 双肩背包
-- 水和食物
-- 防晒用品
-
-### 路线选择
-新手建议选择成熟路线，不要冒险。
-
-## 我常去的路线
-
-- 北京：香山、八达岭
-- 杭州：九溪、龙井
-- 成都：青城山、都江堰
-
-## 写在最后
-
-工作重要，但健康更重要。适时放下键盘，去户外走走吧。`,
-          categoryId: lifeCategory,
-          tagIds: getTagIds(['travel', 'life']),
-          published: true,
-          views: 1890,
-          coverImage: coverImages.life[3],
-        },
-        // ========== 随笔 ==========
-        {
-          title: '从 Vue 迁移到 React 的一些思考',
-          slug: 'vue-to-react-migration',
-          excerpt: '团队决定将项目从 Vue 迁移到 React，记录这个过程中的思考和经验。',
-          content: `# 从 Vue 迁移到 React 的一些思考
-
-最近团队决定将项目从 Vue 2 迁移到 React。这是一个重大决定，我想记录一下过程中的思考。
-
-## 为什么要迁移
-
-### Vue 2 的生命周期
-Vue 2 即将停止维护，而升级到 Vue 3 的成本也很高。
-
-### 团队技能栈
-团队中有更多 React 经验的开发者。
-
-### 生态考虑
-React 的生态系统更加丰富，特别是在某些特定领域。
-
-## 迁移策略
-
-### 渐进式迁移
-不一次性重写，而是：
-1. 新功能用 React 开发
-2. 旧功能逐步替换
-3. 使用微前端架构过渡
-
-## 学到的经验
-
-1. **不要低估迁移成本**：即使是渐进式迁移，工作量也很大
-2. **团队培训很重要**：确保所有人都能熟练使用新框架
-3. **文档是关键**：详细记录迁移过程中的决策
-
-## 结论
-
-没有最好的框架，只有最适合团队的框架。`,
-          categoryId: notesCategory,
-          tagIds: getTagIds(['vue', 'react']),
-          published: true,
-          views: 1456,
-        },
-        {
-          title: 'CSS 变量在大型项目中的实践',
-          slug: 'css-variables-in-large-projects',
-          excerpt: '分享我们在大型项目中使用 CSS 变量的经验，包括主题切换和设计令牌的实现。',
-          content: `# CSS 变量在大型项目中的实践
-
-CSS 变量（自定义属性）是现代 CSS 的重要特性。在我们的项目中，它发挥了重要作用。
-
-## 为什么选择 CSS 变量
-
-### 运行时切换
-与预处理器变量不同，CSS 变量可以在运行时动态修改。
-
-### 级联和继承
-可以利用 CSS 的级联特性，实现局部覆盖。
-
-### 减少重复
-定义一次，多处使用。
-
-## 实际应用
-
-### 主题切换
-\`\`\`css
-:root {
-  --primary-color: #3b82f6;
-  --bg-color: #ffffff;
-}
-
-[data-theme="dark"] {
-  --primary-color: #60a5fa;
-  --bg-color: #1f2937;
-}
-\`\`\`
-
-### 设计令牌
-\`\`\`css
-:root {
-  --space-xs: 0.25rem;
-  --space-sm: 0.5rem;
-  --space-md: 1rem;
-  --space-lg: 2rem;
-}
-\`\`\`
-
-## 最佳实践
-
-1. 命名要有意义
-2. 提供合理的默认值
-3. 文档化所有变量
-
-## 性能考虑
-
-CSS 变量的性能开销很小，可以放心使用。`,
-          categoryId: notesCategory,
-          tagIds: getTagIds(['css']),
-          published: true,
-          views: 987,
-        },
-        {
-          title: 'Python 数据分析入门指南',
-          slug: 'python-data-analysis-guide',
-          excerpt: '非程序员也能学会的数据分析入门教程，使用 Python 进行数据处理。',
-          content: `# Python 数据分析入门指南
-
-数据分析是一项越来越重要的技能。即使是非程序员，也可以用 Python 轻松入门。
-
-## 为什么选择 Python
-
-- 语法简单，易于学习
-- 丰富的数据分析库
-- 活跃的社区支持
-
-## 核心库介绍
-
-### Pandas
-数据处理的基础库，提供了 DataFrame 数据结构。
-
-### NumPy
-数值计算的基础，提供高效的数组操作。
-
-### Matplotlib
-数据可视化的标准库。
-
-## 入门示例
-
-\`\`\`python
-import pandas as pd
-
-# 读取数据
-df = pd.read_csv('data.csv')
-
-# 查看数据
-print(df.head())
-
-# 统计分析
-print(df.describe())
-\`\`\`
-
-## 学习资源
-
-- 《Python 数据分析》
-- Kaggle 教程
-- YouTube 视频教程
-
-## 总结
-
-数据分析不难，关键是动手实践。`,
-          categoryId: techCategory,
-          tagIds: getTagIds(['python', 'ai']),
-          published: true,
-          views: 2345,
-        },
-        {
-          title: '代码审查的艺术',
-          slug: 'art-of-code-review',
-          excerpt: '如何做好代码审查？分享我的经验和 checklist，帮助团队提高代码质量。',
-          content: `# 代码审查的艺术
-
-代码审查是保证代码质量的重要环节。做好 code review 需要技巧和经验。
-
-## 为什么要做 Code Review
-
-### 发现 Bug
-早期发现问题，降低修复成本。
-
-### 知识共享
-团队成员互相学习，了解项目各个部分。
-
-### 保持一致性
-确保代码风格和设计模式的一致性。
-
-## Review Checklist
-
-### 功能性
-- [ ] 代码是否实现了需求
-- [ ] 边界条件是否处理
-- [ ] 错误处理是否完善
-
-### 可读性
-- [ ] 命名是否清晰
-- [ ] 函数是否简短
-- [ ] 注释是否必要且准确
-
-### 性能
-- [ ] 是否有明显的性能问题
-- [ ] 是否避免了不必要的计算
-
-## Review 礼仪
-
-1. **对事不对人**：评论代码，不评论人
-2. **解释原因**：说明为什么需要修改
-3. **给予肯定**：好的代码要表扬
-4. **及时响应**：不要让 PR 长时间等待
-
-## 工具推荐
-
-- GitHub Pull Requests
-- GitLab Merge Requests
-- Phabricator`,
-          categoryId: notesCategory,
-          tagIds: getTagIds(['reading']),
-          published: true,
-          views: 1123,
-        },
-        // ========== 草稿 ==========
-        {
-          title: '未发布：Rust 学习笔记（连载中）',
-          slug: 'rust-learning-notes-draft',
-          excerpt: '正在学习 Rust，这是一篇还没写完的笔记。',
-          content: `# Rust 学习笔记
-
-正在学习 Rust 中，记录一些心得...
-
-## 所有权系统
-
-Rust 的所有权系统是它最独特的特性...
-
-（待续）`,
-          categoryId: notesCategory,
-          tagIds: getTagIds([]),
-          published: false,
-          views: 0,
-        },
-      ]
-      
-      let postsCreated = 0
-      for (const postData of samplePosts) {
-        const existing = await db.query.posts.findFirst({
-          where: (posts, { eq }) => eq(posts.slug, postData.slug),
-        })
-        
-        if (!existing) {
-          const { tagIds, ...postInsert } = postData
-          const readingTime = Math.ceil(postInsert.content.length / 200)
-          
-          const [post] = await db.insert(posts).values({
-            ...postInsert,
-            authorId: adminUser.id,
-            readingTime,
-            publishedAt: postInsert.published ? new Date() : null,
-          }).returning()
-          
-          if (tagIds.length > 0) {
-            await db.insert(postsToTags).values(
-              tagIds.map(tagId => ({ postId: post.id, tagId }))
-            )
-          }
-          postsCreated++
-        }
-      }
-      console.log(`✅ ${postsCreated} sample posts created`)
-    }
-
-    console.log('🎉 Seed completed!')
-  } catch (error) {
-    console.error('❌ Seed failed:', error)
-    process.exit(1)
-  } finally {
-    await pool.end()
+      avatar: null,
+      bio: '系统管理员，负责博客运维',
+      github: 'admin-user',
+      twitter: null,
+      website: null,
+    },
+    {
+      email: 'xiaolin@example.com',
+      username: 'xiaolin',
+      name: '林小雨',
+      role: 'AUTHOR' as const,
+      passwordHash: userPassword,
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=xiaolin',
+      bio: '前端开发者，热爱 React 和 UI 设计',
+      github: 'xiaolin-dev',
+      twitter: 'xiaolin_dev',
+      website: 'https://xiaolin.dev',
+    },
+    {
+      email: 'haoran@example.com',
+      username: 'haoran',
+      name: '张浩然',
+      role: 'AUTHOR' as const,
+      passwordHash: userPassword,
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=haoran',
+      bio: '全栈工程师，Node.js 和 Go 爱好者',
+      github: 'haoran-zhang',
+      twitter: 'haoran_zh',
+      website: 'https://haoran.dev',
+    },
+    {
+      email: 'siqi@example.com',
+      username: 'siqi',
+      name: '王思琪',
+      role: 'AUTHOR' as const,
+      passwordHash: userPassword,
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=siqi',
+      bio: '后端架构师，数据库和分布式系统专家',
+      github: 'siqi-wang',
+      twitter: 'siqi_w',
+      website: 'https://siqi.dev',
+    },
+    {
+      email: 'mingyuan@example.com',
+      username: 'mingyuan',
+      name: '陈明远',
+      role: 'AUTHOR' as const,
+      passwordHash: userPassword,
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=mingyuan',
+      bio: 'DevOps 工程师，云原生实践者',
+      github: 'mingyuan-chen',
+      twitter: 'mingyuan_c',
+      website: null,
+    },
+    {
+      email: 'zixuan@example.com',
+      username: 'zixuan',
+      name: '刘子轩',
+      role: 'USER' as const,
+      passwordHash: userPassword,
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=zixuan',
+      bio: '在读大学生，正在学习前端开发',
+      github: 'zixuan-liu',
+      twitter: null,
+      website: null,
+    },
+    {
+      email: 'jingwen@example.com',
+      username: 'jingwen',
+      name: '赵静雯',
+      role: 'USER' as const,
+      passwordHash: userPassword,
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=jingwen',
+      bio: '产品经理，对技术充满好奇',
+      github: 'jingwen-zhao',
+      twitter: 'jingwen_pm',
+      website: null,
+    },
+    {
+      email: 'kaiwen@example.com',
+      username: 'kaiwen',
+      name: '周凯文',
+      role: 'USER' as const,
+      passwordHash: userPassword,
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=kaiwen',
+      bio: '后端开发新手，喜欢 Python 和数据分析',
+      github: 'kaiwen-zhou',
+      twitter: null,
+      website: null,
+    },
+    {
+      email: 'mengting@example.com',
+      username: 'mengting',
+      name: '李梦婷',
+      role: 'MODERATOR' as const,
+      passwordHash: userPassword,
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=mengting',
+      bio: '社区运营，维护良好的技术交流氛围',
+      github: 'mengting-li',
+      twitter: 'mengting_com',
+      website: null,
+    },
+  ]
+
+  let usersCreated = 0
+  for (const u of userSeeds) {
+    const result = await db.insert(users).values(u).onConflictDoNothing().returning({ id: users.id })
+    if (result.length > 0) usersCreated++
   }
+  console.log(`✅ ${usersCreated} users created`)
+
+  // ==================== Categories ====================
+  const categorySeeds = [
+    { name: '技术', slug: 'tech', description: '技术文章和教程', icon: '💻' },
+    { name: '生活', slug: 'life', description: '生活随笔和感悟', icon: '🌟' },
+    { name: '随笔', slug: 'notes', description: '随手记录和想法', icon: '📝' },
+    { name: '设计', slug: 'design', description: '设计与创意', icon: '🎨' },
+    { name: '后端', slug: 'backend', description: '后端开发技术', icon: '⚙️' },
+    { name: '人工智能', slug: 'ai', description: 'AI 与机器学习', icon: '🤖' },
+    { name: 'DevOps', slug: 'devops', description: '运维与基础设施', icon: '🚀' },
+  ]
+
+  let categoriesCreated = 0
+  for (const c of categorySeeds) {
+    const result = await db.insert(categories).values(c).onConflictDoNothing().returning({ id: categories.id })
+    if (result.length > 0) categoriesCreated++
+  }
+  console.log(`✅ ${categoriesCreated} categories created`)
+
+  // ==================== Tags ====================
+  const tagSeeds = [
+    { name: 'React', slug: 'react', description: 'React 相关' },
+    { name: 'Next.js', slug: 'nextjs', description: 'Next.js 相关' },
+    { name: 'TypeScript', slug: 'typescript', description: 'TypeScript 相关' },
+    { name: 'Node.js', slug: 'nodejs', description: 'Node.js 相关' },
+    { name: '数据库', slug: 'database', description: '数据库相关' },
+    { name: 'CSS', slug: 'css', description: 'CSS 样式' },
+    { name: 'Vue', slug: 'vue', description: 'Vue.js' },
+    { name: 'AI', slug: 'ai', description: '人工智能' },
+    { name: 'Docker', slug: 'docker', description: '容器化' },
+    { name: 'Linux', slug: 'linux', description: 'Linux 系统' },
+    { name: 'Go', slug: 'go', description: 'Go 语言' },
+    { name: 'Python', slug: 'python', description: 'Python' },
+    { name: '阅读', slug: 'reading', description: '阅读笔记' },
+    { name: '旅行', slug: 'travel', description: '旅行日记' },
+    { name: 'UI设计', slug: 'ui-design', description: 'UI 设计' },
+    { name: 'Rust', slug: 'rust', description: 'Rust 语言' },
+    { name: 'Kubernetes', slug: 'kubernetes', description: 'K8s' },
+    { name: '前端工程化', slug: 'frontend-engineering', description: '工程化实践' },
+    { name: '后端架构', slug: 'backend-architecture', description: '架构设计' },
+    { name: 'DevOps', slug: 'devops', description: 'DevOps' },
+    { name: '机器学习', slug: 'machine-learning', description: 'ML' },
+    { name: '开源', slug: 'open-source', description: '开源项目' },
+    { name: '面试', slug: 'interview', description: '面试经验' },
+    { name: '职场', slug: 'career', description: '职业发展' },
+    { name: '健康', slug: 'health', description: '身心健康' },
+    { name: '效率工具', slug: 'productivity', description: '工具推荐' },
+  ]
+
+  let tagsCreated = 0
+  for (const t of tagSeeds) {
+    const result = await db.insert(tags).values(t).onConflictDoNothing().returning({ id: tags.id })
+    if (result.length > 0) tagsCreated++
+  }
+  console.log(`✅ ${tagsCreated} tags created`)
+
+  // ==================== Fetch references ====================
+  const allUsers = await db.query.users.findMany()
+  const allCategories = await db.query.categories.findMany()
+  const allTags = await db.query.tags.findMany()
+
+  const adminUser = allUsers.find((u) => u.username === 'admin')
+  const getCatId = (slug: string) => allCategories.find((c) => c.slug === slug)?.id || allCategories[0].id
+  const getTagIds = (slugs: string[]) => allTags.filter((t) => slugs.includes(t.slug)).map((t) => t.id)
+
+  // ==================== Posts ====================
+  const postDefinitions = [
+    // 1
+    {
+      title: 'Next.js 16 新特性详解：Turbopack 完全指南',
+      slug: 'nextjs-16-features-turbopack',
+      excerpt: '深入了解 Next.js 16 带来的革命性变化，包括 Turbopack 稳定版、Server Actions 改进等。',
+      content: createPostMarkdown('Next.js 16 新特性详解：Turbopack 完全指南', [
+        { h2: 'Turbopack 稳定版', bullets: ['比 Webpack 快 700 倍，比 Vite 快 10 倍','使用 Rust 编写，为开发环境提供极致性能'] },
+        { h2: 'Server Actions 改进', bullets: ['支持更多服务端交互场景','无需创建额外 API 路由'] },
+        { h2: '部分预渲染', bullets: ['静态页面中嵌入动态内容','实现最佳用户体验'] },
+        { h2: '总结', bullets: ['更好的开发体验和更快的构建速度','值得所有 Next.js 项目升级'] },
+      ]),
+      categorySlug: 'tech',
+      tagSlugs: ['nextjs', 'react'],
+      authorUsername: 'admin',
+      published: true,
+      views: 1289,
+      coverImage: coverImages.tech[0],
+    },
+    // 2
+    {
+      title: 'TypeScript 5.8 新功能与最佳实践',
+      slug: 'typescript-5-8-features',
+      excerpt: 'TypeScript 5.8 带来了更强大的类型推断和新的语法特性，让代码更加健壮。',
+      content: createPostMarkdown('TypeScript 5.8 新功能与最佳实践', [
+        { h2: '更智能的类型推断', bullets: ['编译器更好地理解代码意图','条件类型和泛型处理更简洁'] },
+        { h2: '性能优化', bullets: ['编译速度提升 15%','大型项目反馈循环更短'] },
+        { h2: '新语法特性', bullets: ['更好的装饰器支持','改进的 JSDoc 解析','更严格的类型检查选项'] },
+        { h2: '实际应用', bullets: ['重构代码使其更加类型安全','减少显式类型注解'] },
+      ]),
+      categorySlug: 'tech',
+      tagSlugs: ['typescript', 'nodejs'],
+      authorUsername: 'admin',
+      published: true,
+      views: 892,
+      coverImage: coverImages.tech[1],
+    },
+    // 3
+    {
+      title: 'React Server Components 深入解析',
+      slug: 'react-server-components-deep-dive',
+      excerpt: '深入理解 React Server Components 的工作原理，以及如何在项目中正确使用。',
+      content: createPostMarkdown('React Server Components 深入解析', [
+        { h2: '什么是 Server Components', bullets: ['在服务器端渲染的 React 组件','不向客户端发送任何 JavaScript 代码'] },
+        { h2: '与 Client Components 的区别', bullets: ['Server Components 可访问服务器端资源','Client Components 可访问浏览器 API','两者可以无缝组合使用'] },
+        { h2: '最佳实践', bullets: ['尽可能使用 Server Components','只在需要客户端交互的地方使用 Client Components'] },
+        { h2: '性能优势', bullets: ['减少发送到客户端的 JavaScript','显著提高首屏加载速度'] },
+      ]),
+      categorySlug: 'tech',
+      tagSlugs: ['react', 'nextjs'],
+      authorUsername: 'xiaolin',
+      published: true,
+      views: 2156,
+      coverImage: coverImages.tech[2],
+    },
+    // 4
+    {
+      title: 'Docker 容器化部署完全指南',
+      slug: 'docker-deployment-guide',
+      excerpt: '从零开始学习 Docker，掌握容器化部署的核心概念和实战技巧。',
+      content: createPostMarkdown('Docker 容器化部署完全指南', [
+        { h2: '什么是 Docker', bullets: ['开源的容器化平台','将应用及其依赖打包到轻量级容器中'] },
+        { h2: '核心概念', bullets: ['镜像：应用的只读模板','容器：镜像的运行实例','Dockerfile：定义构建步骤','Docker Compose：多容器编排'] },
+        { h2: '实战示例', bullets: ['创建 Node.js 应用的 Docker 配置','多阶段构建优化镜像体积'] },
+        { h2: '部署策略', bullets: ['使用 Docker Swarm 或 Kubernetes 进行编排','实现大规模容器管理'] },
+      ]),
+      categorySlug: 'backend',
+      tagSlugs: ['docker', 'nodejs', 'linux'],
+      authorUsername: 'mingyuan',
+      published: true,
+      views: 1567,
+      coverImage: coverImages.tech[5],
+    },
+    // 5
+    {
+      title: 'PostgreSQL vs MySQL：2024年如何选择',
+      slug: 'postgresql-vs-mysql-2024',
+      excerpt: '对比两款最流行的开源数据库，从性能、功能、生态等多角度分析，帮助你做出正确选择。',
+      content: createPostMarkdown('PostgreSQL vs MySQL：2024年如何选择', [
+        { h2: 'PostgreSQL 优势', bullets: ['更强大的 SQL 支持和高级数据类型','更好的扩展性和并发控制'] },
+        { h2: 'MySQL 优势', bullets: ['简单易用，学习曲线平缓','广泛的社区支持和成熟的生态系统'] },
+        { h2: '性能对比', bullets: ['复杂查询场景 PostgreSQL 更优','简单读写 MySQL 略快'] },
+        { h2: '结论', bullets: ['PostgreSQL 适合复杂应用和地理信息','MySQL 适合快速开发和已有生态'] },
+      ]),
+      categorySlug: 'backend',
+      tagSlugs: ['database', 'nodejs'],
+      authorUsername: 'siqi',
+      published: true,
+      views: 3421,
+      coverImage: coverImages.tech[3],
+    },
+    // 6
+    {
+      title: 'Tailwind CSS 4.0 新特性实战',
+      slug: 'tailwind-css-4-features',
+      excerpt: '探索 Tailwind CSS 4.0 的重大更新，包括更快的构建速度和新的主题系统。',
+      content: createPostMarkdown('Tailwind CSS 4.0 新特性实战', [
+        { h2: '零配置', bullets: ['不再需要 tailwind.config.js','所有配置通过 CSS 变量完成'] },
+        { h2: '更快的构建速度', bullets: ['基于 Rust 的新引擎','构建速度提升 10 倍'] },
+        { h2: '新的主题系统', bullets: ['CSS 变量主题支持','运行时主题切换','更简单的暗色模式配置'] },
+        { h2: '迁移指南', bullets: ['更新依赖、转换配置文件、测试调试'] },
+      ]),
+      categorySlug: 'tech',
+      tagSlugs: ['css', 'react'],
+      authorUsername: 'xiaolin',
+      published: true,
+      views: 1876,
+      coverImage: coverImages.tech[4],
+    },
+    // 7
+    {
+      title: 'Go 语言微服务架构实战',
+      slug: 'go-microservices-architecture',
+      excerpt: '使用 Go 语言构建高性能微服务，包括服务发现、负载均衡和分布式追踪。',
+      content: createPostMarkdown('Go 语言微服务架构实战', [
+        { h2: '为什么选择 Go', bullets: ['编译速度快，二进制部署无依赖','goroutine 和 channel 原生并发支持'] },
+        { h2: '服务发现', bullets: ['使用 Consul 或 etcd 实现服务注册和发现'] },
+        { h2: 'API 网关', bullets: ['使用 Kong 或自研网关处理认证、限流、日志'] },
+        { h2: '监控和追踪', bullets: ['集成 Prometheus 和 Jaeger','实现全面的可观测性'] },
+      ]),
+      categorySlug: 'backend',
+      tagSlugs: ['go', 'docker'],
+      authorUsername: 'haoran',
+      published: true,
+      views: 2341,
+      coverImage: coverImages.tech[6],
+    },
+    // 8
+    {
+      title: 'AI 辅助编程：ChatGPT 与 Copilot 对比',
+      slug: 'ai-coding-assistant-comparison',
+      excerpt: '深度对比主流 AI 编程助手，看看哪个更适合你的开发 workflow。',
+      content: createPostMarkdown('AI 辅助编程：ChatGPT 与 Copilot 对比', [
+        { h2: 'GitHub Copilot', bullets: ['实时代码补全，深度集成 IDE','适合日常编码和重复性代码'] },
+        { h2: 'ChatGPT / Claude', bullets: ['更长上下文，可解释代码和架构设计','适合代码审查和学习教学'] },
+        { h2: '实际测试', bullets: ['算法实现、调试帮助、代码重构、文档生成'] },
+        { h2: '最佳实践', bullets: ['结合使用两者，发挥各自优势'] },
+      ]),
+      categorySlug: 'tech',
+      tagSlugs: ['ai', 'typescript'],
+      authorUsername: 'admin',
+      published: true,
+      views: 4521,
+      coverImage: coverImages.tech[7],
+    },
+    // 9
+    {
+      title: '现代 UI 设计趋势 2024',
+      slug: 'ui-design-trends-2024',
+      excerpt: '探索今年最流行的 UI 设计趋势，包括玻璃拟态、新拟态和极简主义。',
+      content: createPostMarkdown('现代 UI 设计趋势 2024', [
+        { h2: '玻璃拟态', bullets: ['半透明、模糊背景效果继续流行','创造层次感和现代感'] },
+        { h2: '新拟态', bullets: ['柔和阴影效果创造浮雕视觉','适合突出材质感的场景'] },
+        { h2: '极简主义', bullets: ['更干净的布局、更多留白、更克制的配色'] },
+        { h2: '工具推荐', bullets: ['Figma 协作设计','Framer 原型制作','Rive 复杂动画'] },
+      ]),
+      categorySlug: 'design',
+      tagSlugs: ['ui-design', 'css'],
+      authorUsername: 'xiaolin',
+      published: true,
+      views: 1654,
+      coverImage: coverImages.design[0],
+    },
+    // 10
+    {
+      title: '设计系统的构建与维护',
+      slug: 'design-system-guide',
+      excerpt: '从 0 到 1 构建企业级设计系统，包括组件库、设计令牌和文档规范。',
+      content: createPostMarkdown('设计系统的构建与维护', [
+        { h2: '什么是设计系统', bullets: ['可复用的组件和清晰的标准','支持数字产品开发'] },
+        { h2: '核心组成部分', bullets: ['设计令牌：颜色、字体、间距、圆角','组件库：基础、复合、业务组件'] },
+        { h2: '文档和指南', bullets: ['使用规范、设计原则、最佳实践'] },
+        { h2: '实施策略', bullets: ['从小规模开始，逐步扩展，持续迭代'] },
+      ]),
+      categorySlug: 'design',
+      tagSlugs: ['ui-design', 'react'],
+      authorUsername: 'xiaolin',
+      published: true,
+      views: 987,
+      coverImage: coverImages.design[1],
+    },
+    // 11
+    {
+      title: '我的编程学习之路：从零到全栈',
+      slug: 'my-coding-journey-fullstack',
+      excerpt: '从初学者到全栈开发者的成长历程，分享我的经验和心得，希望能给你一些启发。',
+      content: createPostMarkdown('我的编程学习之路：从零到全栈', [
+        { h2: '入门阶段', bullets: ['学习 HTML/CSS/JavaScript','做个人简历、Todo、天气应用等小项目'] },
+        { h2: '迷茫期', bullets: ['前端框架众多，最终选择 React','因为社区活跃和工作机会多'] },
+        { h2: '进阶成长', bullets: ['学习 React、Node.js 全栈开发','完成第一个商业项目，开始写技术博客'] },
+        { h2: '心得体会', bullets: ['坚持练习、项目驱动、社区参与、持续学习'] },
+      ]),
+      categorySlug: 'life',
+      tagSlugs: ['reading', 'react', 'nodejs'],
+      authorUsername: 'admin',
+      published: true,
+      views: 3256,
+      coverImage: coverImages.life[2],
+    },
+    // 12
+    {
+      title: '远程工作三年：我的经验与反思',
+      slug: 'remote-work-3-years',
+      excerpt: '疫情后远程工作成为常态，分享我三年远程工作的真实体验和心得。',
+      content: createPostMarkdown('远程工作三年：我的经验与反思', [
+        { h2: '优点', bullets: ['时间灵活，避开高峰期','节省通勤时间','环境舒适'] },
+        { h2: '挑战', bullets: ['文字沟通效率低，容易产生误解','工作和生活边界模糊','有时会感到孤独'] },
+        { h2: '我的解决方案', bullets: ['建立固定工作时间表','设置专门办公空间','定期参加线下活动'] },
+        { h2: '总结', bullets: ['远程工作需要自律，但也能带来更好的生活质量'] },
+      ]),
+      categorySlug: 'life',
+      tagSlugs: ['life', 'reading'],
+      authorUsername: 'admin',
+      published: true,
+      views: 2134,
+      coverImage: coverImages.life[0],
+    },
+    // 13
+    {
+      title: '程序员的咖啡指南',
+      slug: 'programmer-coffee-guide',
+      excerpt: '作为程序员，咖啡是续命神器。分享我的咖啡入门指南和冲煮心得。',
+      content: createPostMarkdown('程序员的咖啡指南', [
+        { h2: '咖啡豆的选择', bullets: ['埃塞俄比亚：花香、果酸','哥伦比亚：平衡、坚果','巴西：醇厚、巧克力'] },
+        { h2: '烘焙度', bullets: ['浅烘：酸度高，风味丰富','中烘：平衡，适合入门','深烘：苦味重，提神效果好'] },
+        { h2: '冲煮方法', bullets: ['手冲：最纯粹的方式','意式浓缩：浓郁强烈','冷萃：低酸度，适合夏天'] },
+        { h2: '我的日常', bullets: ['早晨一杯手冲，下午一杯意式'] },
+      ]),
+      categorySlug: 'life',
+      tagSlugs: ['life'],
+      authorUsername: 'admin',
+      published: true,
+      views: 1567,
+      coverImage: coverImages.life[1],
+    },
+    // 14
+    {
+      title: '2024 年技术书单推荐',
+      slug: '2024-tech-book-recommendations',
+      excerpt: '精选今年值得一读的技术书籍，涵盖编程、架构、AI 等多个领域。',
+      content: createPostMarkdown('2024 年技术书单推荐', [
+        { h2: '编程基础', bullets: ['《代码整洁之道》：写出可读可维护的代码','《设计模式》：每个程序员的必读经典'] },
+        { h2: '系统架构', bullets: ['《数据密集型应用系统设计》：深入浅出分布式系统','《构建微服务》：微服务架构实战指南'] },
+        { h2: 'AI 与机器学习', bullets: ['《动手学深度学习》：理论与实践结合'] },
+        { h2: '软技能', bullets: ['《程序员修炼之道》：技术与职业发展建议'] },
+      ]),
+      categorySlug: 'life',
+      tagSlugs: ['reading', 'ai'],
+      authorUsername: 'admin',
+      published: true,
+      views: 2890,
+      coverImage: coverImages.life[4],
+    },
+    // 15
+    {
+      title: '周末登山：逃离代码，拥抱自然',
+      slug: 'weekend-hiking-escape',
+      excerpt: '程序员的周末应该怎么过？我的答案是去山里走走，让大脑彻底放松。',
+      content: createPostMarkdown('周末登山：逃离代码，拥抱自然', [
+        { h2: '为什么选择登山', bullets: ['身体锻炼，改善久坐问题','大脑休息，远离屏幕','登顶成就感'] },
+        { h2: '入门建议', bullets: ['舒适的登山鞋、双肩背包','水和食物、防晒用品','新手选择成熟路线'] },
+        { h2: '我常去的路线', bullets: ['北京：香山、八达岭','杭州：九溪、龙井','成都：青城山、都江堰'] },
+        { h2: '写在最后', bullets: ['工作重要，但健康更重要'] },
+      ]),
+      categorySlug: 'life',
+      tagSlugs: ['travel', 'life'],
+      authorUsername: 'admin',
+      published: true,
+      views: 1890,
+      coverImage: coverImages.life[3],
+    },
+    // 16
+    {
+      title: '从 Vue 迁移到 React 的一些思考',
+      slug: 'vue-to-react-migration',
+      excerpt: '团队决定将项目从 Vue 迁移到 React，记录这个过程中的思考和经验。',
+      content: createPostMarkdown('从 Vue 迁移到 React 的一些思考', [
+        { h2: '为什么要迁移', bullets: ['Vue 2 即将停止维护','团队 React 经验更丰富','React 生态更加丰富'] },
+        { h2: '迁移策略', bullets: ['渐进式迁移，新功能用 React','旧功能逐步替换','微前端架构过渡'] },
+        { h2: '学到的经验', bullets: ['不要低估迁移成本','团队培训很重要','文档是关键'] },
+        { h2: '结论', bullets: ['没有最好的框架，只有最适合团队的框架'] },
+      ]),
+      categorySlug: 'notes',
+      tagSlugs: ['vue', 'react'],
+      authorUsername: 'haoran',
+      published: true,
+      views: 1456,
+      coverImage: coverImages.tech[8],
+    },
+    // 17
+    {
+      title: 'CSS 变量在大型项目中的实践',
+      slug: 'css-variables-in-large-projects',
+      excerpt: '分享我们在大型项目中使用 CSS 变量的经验，包括主题切换和设计令牌的实现。',
+      content: createPostMarkdown('CSS 变量在大型项目中的实践', [
+        { h2: '为什么选择 CSS 变量', bullets: ['运行时动态修改','利用 CSS 级联特性实现局部覆盖','减少重复'] },
+        { h2: '实际应用', bullets: ['主题切换：通过 data-theme 改变变量值','设计令牌：统一管理 spacing、color'] },
+        { h2: '最佳实践', bullets: ['命名要有意义','提供合理的默认值','文档化所有变量'] },
+        { h2: '性能考虑', bullets: ['CSS 变量的性能开销很小，可以放心使用'] },
+      ]),
+      categorySlug: 'notes',
+      tagSlugs: ['css'],
+      authorUsername: 'xiaolin',
+      published: true,
+      views: 987,
+      coverImage: coverImages.design[2],
+    },
+    // 18
+    {
+      title: 'Python 数据分析入门指南',
+      slug: 'python-data-analysis-guide',
+      excerpt: '非程序员也能学会的数据分析入门教程，使用 Python 进行数据处理。',
+      content: createPostMarkdown('Python 数据分析入门指南', [
+        { h2: '为什么选择 Python', bullets: ['语法简单，易于学习','丰富的数据分析库','活跃的社区支持'] },
+        { h2: '核心库介绍', bullets: ['Pandas：DataFrame 数据处理','NumPy：高效数组操作','Matplotlib：数据可视化'] },
+        { h2: '入门示例', bullets: ['读取 CSV、查看 head、describe 统计分析'] },
+        { h2: '学习资源', bullets: ['《Python 数据分析》、Kaggle 教程、YouTube 视频'] },
+      ]),
+      categorySlug: 'tech',
+      tagSlugs: ['python', 'ai'],
+      authorUsername: 'kaiwen',
+      published: true,
+      views: 2345,
+      coverImage: coverImages.tech[9],
+    },
+    // 19
+    {
+      title: '代码审查的艺术',
+      slug: 'art-of-code-review',
+      excerpt: '如何做好代码审查？分享我的经验和 checklist，帮助团队提高代码质量。',
+      content: createPostMarkdown('代码审查的艺术', [
+        { h2: '为什么要做 Code Review', bullets: ['早期发现 Bug，降低修复成本','团队成员互相学习','保持代码风格一致性'] },
+        { h2: 'Review Checklist', bullets: ['功能性：是否实现需求、边界条件、错误处理','可读性：命名、函数长度、注释'] },
+        { h2: 'Review 礼仪', bullets: ['对事不对人','解释原因','给予肯定','及时响应'] },
+        { h2: '工具推荐', bullets: ['GitHub Pull Requests','GitLab Merge Requests'] },
+      ]),
+      categorySlug: 'notes',
+      tagSlugs: ['reading'],
+      authorUsername: 'siqi',
+      published: true,
+      views: 1123,
+      coverImage: coverImages.tech[1],
+    },
+    // 20
+    {
+      title: '未发布：Rust 学习笔记（连载中）',
+      slug: 'rust-learning-notes-draft',
+      excerpt: '正在学习 Rust，这是一篇还没写完的笔记。',
+      content: createPostMarkdown('Rust 学习笔记', [
+        { h2: '所有权系统', bullets: ['Rust 最独特的特性','编译时保证内存安全'] },
+        { h2: '借用与生命周期', bullets: ['避免悬垂指针','理解 &str 和 String 的区别'] },
+        { h2: '并发安全', bullets: ['所有权模型天然避免数据竞争'] },
+      ]),
+      categorySlug: 'notes',
+      tagSlugs: ['rust'],
+      authorUsername: 'admin',
+      published: false,
+      views: 0,
+      coverImage: coverImages.tech[0],
+    },
+    // 21
+    {
+      title: 'React 19 Actions 完全指南',
+      slug: 'react-19-actions-guide',
+      excerpt: '深入了解 React 19 Actions 新特性，简化表单和异步状态管理。',
+      content: createPostMarkdown('React 19 Actions 完全指南', [
+        { h2: 'Actions 简介', bullets: ['处理异步状态更新的新方式','统一了 pending、error、success 等状态'] },
+        { h2: 'useActionState', bullets: ['简化表单状态管理','自动处理提交中的 loading 状态'] },
+        { h2: 'useOptimistic', bullets: ['提供乐观更新的原生支持','无需手动管理回滚逻辑'] },
+        { h2: '最佳实践', bullets: ['优先使用 Server Actions','在客户端配合 useTransition 使用'] },
+      ]),
+      categorySlug: 'tech',
+      tagSlugs: ['react', 'nextjs'],
+      authorUsername: 'xiaolin',
+      published: true,
+      views: 3421,
+      coverImage: coverImages.tech[0],
+    },
+    // 22
+    {
+      title: 'Zustand 与 Redux：2024 状态管理选择',
+      slug: 'zustand-vs-redux-2024',
+      excerpt: '对比两款主流 React 状态管理库，帮助你在新项目中做出正确选择。',
+      content: createPostMarkdown('Zustand 与 Redux：2024 状态管理选择', [
+        { h2: 'Zustand 优势', bullets: ['轻量、无样板代码','Hooks 风格的 API 非常直观'] },
+        { h2: 'Redux 优势', bullets: ['Redux DevTools 调试体验极佳','中间件生态丰富'] },
+        { h2: '2024 选择建议', bullets: ['小项目用 Zustand','大项目用 Redux Toolkit'] },
+        { h2: '迁移建议', bullets: ['可以逐步替换，无需一次性重写'] },
+      ]),
+      categorySlug: 'tech',
+      tagSlugs: ['react', 'typescript'],
+      authorUsername: 'xiaolin',
+      published: true,
+      views: 2789,
+      coverImage: coverImages.tech[2],
+    },
+    // 23
+    {
+      title: 'Next.js App Router 迁移实战',
+      slug: 'nextjs-app-router-migration',
+      excerpt: '记录我们将一个大型项目从 Pages Router 迁移到 App Router 的全过程。',
+      content: createPostMarkdown('Next.js App Router 迁移实战', [
+        { h2: '迁移准备', bullets: ['理解 Pages Router 和 App Router 的核心差异','评估迁移成本和收益'] },
+        { h2: '常见坑', bullets: ['Server Component 中误用客户端 API','缓存策略变化导致数据不更新'] },
+        { h2: '性能提升', bullets: ['预渲染和流式传输带来更好的首屏体验'] },
+        { h2: '团队经验', bullets: ['完善的迁移文档和团队培训至关重要'] },
+      ]),
+      categorySlug: 'tech',
+      tagSlugs: ['nextjs', 'react'],
+      authorUsername: 'xiaolin',
+      published: true,
+      views: 3156,
+      coverImage: coverImages.tech[3],
+    },
+    // 24
+    {
+      title: 'Drizzle ORM：类型安全的数据库之旅',
+      slug: 'drizzle-orm-guide',
+      excerpt: '介绍 Drizzle ORM 的设计理念，以及如何在项目中享受类型安全的数据库操作。',
+      content: createPostMarkdown('Drizzle ORM：类型安全的数据库之旅', [
+        { h2: 'Drizzle 特点', bullets: ['类型安全、SQL-like 的查询 API','更接近 SQL，学习成本低'] },
+        { h2: '与 ORM 对比', bullets: ['比传统 ORM 更轻量','没有隐式查询和魔法'] },
+        { h2: '实战示例', bullets: ['CRUD 操作、关系查询、迁移管理'] },
+        { h2: '适用场景', bullets: ['追求类型安全和 SQL 透明度的团队'] },
+      ]),
+      categorySlug: 'backend',
+      tagSlugs: ['database', 'typescript'],
+      authorUsername: 'haoran',
+      published: true,
+      views: 1987,
+      coverImage: coverImages.tech[4],
+    },
+    // 25
+    {
+      title: 'Prisma 还是 Drizzle？一年后我的选择',
+      slug: 'prisma-vs-drizzle-one-year',
+      excerpt: '同时使用 Prisma 和 Drizzle 一年后，分享我的真实体验和选型建议。',
+      content: createPostMarkdown('Prisma 还是 Drizzle？一年后我的选择', [
+        { h2: 'Prisma 优势', bullets: ['成熟生态、直观 API、强大的 Client'] },
+        { h2: 'Drizzle 优势', bullets: ['轻量、无查询引擎、完全 SQL 透明'] },
+        { h2: '一年实践', bullets: ['快速原型用 Prisma','性能敏感场景用 Drizzle'] },
+        { h2: '迁移成本', bullets: ['Schema 转换需要一定工作量，但查询层迁移较平滑'] },
+      ]),
+      categorySlug: 'backend',
+      tagSlugs: ['database', 'nodejs'],
+      authorUsername: 'haoran',
+      published: true,
+      views: 2567,
+      coverImage: coverImages.tech[5],
+    },
+    // 26
+    {
+      title: 'Kubernetes 入门：从 Docker 到 K8s',
+      slug: 'kubernetes-beginner-guide',
+      excerpt: '零基础入门 Kubernetes，理解容器编排的核心概念和基本操作。',
+      content: createPostMarkdown('Kubernetes 入门：从 Docker 到 K8s', [
+        { h2: '为什么需要 K8s', bullets: ['Docker 解决了单容器部署，但多容器管理复杂','K8s 提供自动扩缩容、服务发现、故障恢复'] },
+        { h2: '核心概念', bullets: ['Pod：最小调度单元','Service：暴露应用的网络入口','Deployment：管理 Pod 副本'] },
+        { h2: 'minikube 实战', bullets: ['本地搭建单节点 K8s 集群','部署第一个 Nginx 应用'] },
+        { h2: '学习路径', bullets: ['官方文档、CKAD 认证、实际项目演练'] },
+      ]),
+      categorySlug: 'devops',
+      tagSlugs: ['docker', 'kubernetes'],
+      authorUsername: 'mingyuan',
+      published: true,
+      views: 2890,
+      coverImage: coverImages.tech[6],
+    },
+    // 27
+    {
+      title: 'Git 高级技巧：Rebase 与 Cherry-pick',
+      slug: 'git-advanced-tips',
+      excerpt: '掌握 Git 高级命令，让你的版本控制更加得心应手。',
+      content: createPostMarkdown('Git 高级技巧：Rebase 与 Cherry-pick', [
+        { h2: 'Rebase', bullets: ['整理提交历史，保持线性','交互式 rebase 修改、合并、删除提交'] },
+        { h2: 'Cherry-pick', bullets: ['将特定提交应用到其他分支','适合 hotfix 场景'] },
+        { h2: 'Bisect', bullets: ['二分查找引入 Bug 的提交','快速定位问题'] },
+        { h2: '团队协作', bullets: ['避免在公共分支使用 force push','rebase 前确认没有他人基于该分支工作'] },
+      ]),
+      categorySlug: 'tech',
+      tagSlugs: ['nodejs', 'frontend-engineering'],
+      authorUsername: 'haoran',
+      published: true,
+      views: 1765,
+      coverImage: coverImages.tech[7],
+    },
+    // 28
+    {
+      title: 'Node.js Stream 处理大文件',
+      slug: 'nodejs-stream-large-files',
+      excerpt: '使用 Node.js Stream 高效处理大文件，避免内存溢出。',
+      content: createPostMarkdown('Node.js Stream 处理大文件', [
+        { h2: '为什么用 Stream', bullets: ['无需一次性将文件读入内存','适合处理 GB 级文件'] },
+        { h2: 'Readable 和 Writable', bullets: ['通过 pipe 连接流','实现数据的逐步处理'] },
+        { h2: '实战示例', bullets: ['大文件复制、CSV 数据清洗、日志分析'] },
+        { h2: '背压机制', bullets: ['自动调节读写速度，防止内存溢出'] },
+      ]),
+      categorySlug: 'backend',
+      tagSlugs: ['nodejs', 'backend-architecture'],
+      authorUsername: 'haoran',
+      published: true,
+      views: 2134,
+      coverImage: coverImages.tech[8],
+    },
+    // 29
+    {
+      title: 'WebAssembly：浏览器的第二语言',
+      slug: 'webassembly-intro',
+      excerpt: '了解 WebAssembly 如何让浏览器运行高性能代码，以及在前端工程中的应用场景。',
+      content: createPostMarkdown('WebAssembly：浏览器的第二语言', [
+        { h2: 'WASM 简介', bullets: ['浏览器中运行接近原生速度的二进制代码','C、C++、Rust 等语言可编译为 WASM'] },
+        { h2: 'Rust to WASM', bullets: ['wasm-pack 工具链简化构建过程','与 JavaScript 无缝互操作'] },
+        { h2: '应用场景', bullets: ['图像处理、视频编解码、游戏引擎、加密计算'] },
+        { h2: '性能对比', bullets: ['在计算密集型任务中比 JS 快 10-30 倍'] },
+      ]),
+      categorySlug: 'tech',
+      tagSlugs: ['rust', 'react'],
+      authorUsername: 'xiaolin',
+      published: true,
+      views: 1654,
+      coverImage: coverImages.tech[9],
+    },
+    // 30
+    {
+      title: 'Edge Runtime 实战指南',
+      slug: 'edge-runtime-guide',
+      excerpt: '对比 Edge Runtime 和 Serverless，探索边缘计算的实战应用场景。',
+      content: createPostMarkdown('Edge Runtime 实战指南', [
+        { h2: 'Edge 与 Serverless', bullets: ['Edge 启动时间更短，地理分布更广','Serverless 适合长任务和完整 Node API'] },
+        { h2: 'Vercel Edge Functions', bullets: ['低延迟的全球分发','适合轻量级计算'] },
+        { h2: '限制', bullets: ['包大小限制','不支持部分 Node.js 内置模块'] },
+        { h2: '适用场景', bullets: ['用户鉴权、A/B 测试、地理位置个性化'] },
+      ]),
+      categorySlug: 'backend',
+      tagSlugs: ['backend-architecture', 'nodejs'],
+      authorUsername: 'siqi',
+      published: true,
+      views: 2345,
+      coverImage: coverImages.tech[0],
+    },
+    // 31
+    {
+      title: 'Redis 缓存策略详解',
+      slug: 'redis-caching-strategies',
+      excerpt: '从缓存穿透到雪崩，全面掌握 Redis 缓存策略和最佳实践。',
+      content: createPostMarkdown('Redis 缓存策略详解', [
+        { h2: '缓存策略', bullets: ['Cache Aside：最常用的读写策略','Write Through：同步写缓存和数据库'] },
+        { h2: '常见问题', bullets: ['缓存穿透：查询不存在的数据','缓存击穿：热点 key 过期','缓存雪崩：大量 key 同时过期'] },
+        { h2: '布隆过滤器', bullets: ['高效判断元素是否可能存在','解决缓存穿透问题'] },
+        { h2: '最佳实践', bullets: ['设置合理的过期时间','监控缓存命中率','做好降级方案'] },
+      ]),
+      categorySlug: 'backend',
+      tagSlugs: ['database', 'backend-architecture'],
+      authorUsername: 'siqi',
+      published: true,
+      views: 3123,
+      coverImage: coverImages.tech[1],
+    },
+    // 32
+    {
+      title: 'REST API 设计规范',
+      slug: 'rest-api-design-guide',
+      excerpt: '总结 RESTful API 设计的最佳实践，让你的接口更加规范和易用。',
+      content: createPostMarkdown('REST API 设计规范', [
+        { h2: 'URL 设计', bullets: ['使用名词表示资源，避免动词','合理版本控制如 /v1/users'] },
+        { h2: 'HTTP 方法', bullets: ['GET 查询、POST 创建、PUT 全量更新、PATCH 部分更新、DELETE 删除'] },
+        { h2: '状态码', bullets: ['200 成功、201 创建、400 请求错误、401 未授权、404 不存在、500 服务器错误'] },
+        { h2: '认证与安全', bullets: ['JWT Token 认证','接口限流防止滥用','HTTPS 强制传输'] },
+      ]),
+      categorySlug: 'backend',
+      tagSlugs: ['backend-architecture', 'nodejs'],
+      authorUsername: 'haoran',
+      published: true,
+      views: 2876,
+      coverImage: coverImages.tech[2],
+    },
+    // 33
+    {
+      title: '消息队列选型：Kafka vs RabbitMQ',
+      slug: 'kafka-vs-rabbitmq',
+      excerpt: '对比两款主流消息队列，从架构设计到运维成本的全面分析。',
+      content: createPostMarkdown('消息队列选型：Kafka vs RabbitMQ', [
+        { h2: 'Kafka', bullets: ['高吞吐、日志型、持久化能力强','适合事件流和大数据管道'] },
+        { h2: 'RabbitMQ', bullets: ['灵活路由、协议丰富、功能全面','适合传统企业消息队列'] },
+        { h2: '使用场景', bullets: ['用户行为日志用 Kafka','订单状态通知用 RabbitMQ'] },
+        { h2: '运维成本', bullets: ['Kafka 集群搭建和调优更复杂','RabbitMQ 管理界面更友好'] },
+      ]),
+      categorySlug: 'backend',
+      tagSlugs: ['backend-architecture', 'go'],
+      authorUsername: 'siqi',
+      published: true,
+      views: 2567,
+      coverImage: coverImages.tech[3],
+    },
+    // 34
+    {
+      title: 'Figma Auto Layout 进阶',
+      slug: 'figma-auto-layout-advanced',
+      excerpt: '深入掌握 Figma Auto Layout，提升设计效率和组件规范性。',
+      content: createPostMarkdown('Figma Auto Layout 进阶', [
+        { h2: '基础概念', bullets: ['框架、内边距、间距的理解','方向和对齐方式'] },
+        { h2: '响应式设计', bullets: ['自动调整大小实现自适应','固定与填充的结合使用'] },
+        { h2: '嵌套技巧', bullets: ['复杂列表和卡片的布局','多层 Auto Layout 的组合'] },
+        { h2: '组件化', bullets: ['结合 Variants 构建可复用组件','统一设计系统的布局规范'] },
+      ]),
+      categorySlug: 'design',
+      tagSlugs: ['ui-design', 'css'],
+      authorUsername: 'xiaolin',
+      published: true,
+      views: 1456,
+      coverImage: coverImages.design[0],
+    },
+    // 35
+    {
+      title: '设计中的留白艺术',
+      slug: 'art-of-whitespace',
+      excerpt: '探讨留白在设计中的重要性，以及如何通过负空间提升界面质感。',
+      content: createPostMarkdown('设计中的留白艺术', [
+        { h2: '什么是留白', bullets: ['负空间是设计中未被元素占据的区域','能有效引导用户视线'] },
+        { h2: '微留白与宏留白', bullets: ['微留白：字距、行距、按钮内边距','宏留白：板块之间的大片空白'] },
+        { h2: '呼吸感', bullets: ['避免信息过载','让页面有呼吸的空间'] },
+        { h2: '案例分析', bullets: ['Apple 的产品页','Notion 的简洁界面'] },
+      ]),
+      categorySlug: 'design',
+      tagSlugs: ['ui-design', 'css'],
+      authorUsername: 'jingwen',
+      published: true,
+      views: 1234,
+      coverImage: coverImages.design[1],
+    },
+    // 36
+    {
+      title: 'Dark Mode 设计完全指南',
+      slug: 'dark-mode-design-guide',
+      excerpt: '从配色到层级，系统讲解 Dark Mode 设计的核心原则和实现方法。',
+      content: createPostMarkdown('Dark Mode 设计完全指南', [
+        { h2: '配色原则', bullets: ['降低对比度，避免纯黑背景','使用深灰作为基础色'] },
+        { h2: '层级表达', bullets: ['通过不同透明度或色值区分层级','避免过多阴影'] },
+        { h2: '图片处理', bullets: ['暗色模式下图片亮度可能需要微调','考虑使用 mask 或滤镜'] },
+        { h2: '实现方式', bullets: ['CSS 变量定义两套主题','使用 prefers-color-scheme 媒体查询'] },
+      ]),
+      categorySlug: 'design',
+      tagSlugs: ['ui-design', 'css'],
+      authorUsername: 'xiaolin',
+      published: true,
+      views: 1987,
+      coverImage: coverImages.design[3],
+    },
+    // 37
+    {
+      title: '程序员的健康管理',
+      slug: 'developer-health-guide',
+      excerpt: '久坐、熬夜、用眼过度？这份程序员健康指南请收好。',
+      content: createPostMarkdown('程序员的健康管理', [
+        { h2: '颈椎与腰椎', bullets: ['升降桌和人体工学椅是长期投资','每小时起身活动 5 分钟'] },
+        { h2: '眼睛保护', bullets: ['20-20-20 法则：每 20 分钟看 20 英尺外 20 秒','室内光线充足，屏幕亮度适中'] },
+        { h2: '运动建议', bullets: ['每周至少 150 分钟中等强度运动','游泳、跑步、瑜伽都是好选择'] },
+        { h2: '心理健康', bullets: ['学会说 no，避免 burnout','培养工作之外的兴趣爱好'] },
+      ]),
+      categorySlug: 'life',
+      tagSlugs: ['health', 'life'],
+      authorUsername: 'mengting',
+      published: true,
+      views: 3421,
+      coverImage: coverImages.life[5],
+    },
+    // 38
+    {
+      title: '如何构建个人知识库',
+      slug: 'personal-knowledge-base',
+      excerpt: '从工具选择到方法论，分享我构建个人知识库的经验。',
+      content: createPostMarkdown('如何构建个人知识库', [
+        { h2: '工具选择', bullets: ['Notion：全能型知识管理','Obsidian：本地优先、双链笔记','Logseq：大纲式思维工具'] },
+        { h2: 'PARA 方法', bullets: ['Project 项目、Area 领域、Resource 资源、Archive 归档'] },
+        { h2: '定期回顾', bullets: ['每周整理 inbox','每月回顾和归档过期内容'] },
+        { h2: '输出倒逼输入', bullets: ['写博客、做分享是检验理解的好方式'] },
+      ]),
+      categorySlug: 'life',
+      tagSlugs: ['productivity', 'reading'],
+      authorUsername: 'jingwen',
+      published: true,
+      views: 2678,
+      coverImage: coverImages.life[4],
+    },
+    // 39
+    {
+      title: '技术焦虑与终身学习',
+      slug: 'tech-anxiety-lifelong-learning',
+      excerpt: '面对快速变化的技术世界，如何保持平和心态并持续成长？',
+      content: createPostMarkdown('技术焦虑与终身学习', [
+        { h2: '焦虑来源', bullets: ['技术更新快，总有学不完的东西','35岁危机和行业竞争压力'] },
+        { h2: '核心能力', bullets: ['解决问题的能力比掌握某个框架更重要','学习能力才是最核心的竞争力'] },
+        { h2: '深耕与广度', bullets: ['在某一领域深耕成为专家','同时保持对相邻领域的了解'] },
+        { h2: '终身学习', bullets: ['保持好奇心，把学习当作习惯而非任务'] },
+      ]),
+      categorySlug: 'notes',
+      tagSlugs: ['career', 'reading'],
+      authorUsername: 'zixuan',
+      published: true,
+      views: 2890,
+      coverImage: coverImages.life[2],
+    },
+    // 40
+    {
+      title: '开源贡献初学者指南',
+      slug: 'open-source-beginner-guide',
+      excerpt: '想参与开源但不知道从何开始？这份指南帮你迈出第一步。',
+      content: createPostMarkdown('开源贡献初学者指南', [
+        { h2: '为什么参与', bullets: ['学习优秀代码、结识志同道合的开发者','为简历增添亮点'] },
+        { h2: '入门方式', bullets: ['从文档修正和测试用例开始','不要一上来就尝试重构核心代码'] },
+        { h2: '找到合适项目', bullets: ['关注 Good First Issue 标签','选择自己日常使用的项目'] },
+        { h2: '礼仪规范', bullets: ['尊重维护者时间','提交前阅读贡献指南','保持礼貌和耐心'] },
+      ]),
+      categorySlug: 'notes',
+      tagSlugs: ['open-source', 'reading'],
+      authorUsername: 'mingyuan',
+      published: true,
+      views: 2134,
+      coverImage: coverImages.tech[4],
+    },
+    // 41
+    {
+      title: 'LLM 应用开发入门',
+      slug: 'llm-app-development',
+      excerpt: '从大模型基础到 RAG，快速入门 LLM 应用开发。',
+      content: createPostMarkdown('LLM 应用开发入门', [
+        { h2: '大模型基础', bullets: ['理解 Prompt Engineering 的核心原则','学会给模型设定角色和约束'] },
+        { h2: '框架选择', bullets: ['LangChain：灵活的链式调用','LlamaIndex：专注于 RAG 和文档问答'] },
+        { h2: 'RAG 架构', bullets: ['文档切分、向量化、检索增强生成','解决大模型幻觉和知识时效性问题'] },
+        { h2: '部署优化', bullets: ['模型量化降低显存占用','使用 vLLM 等推理加速框架'] },
+      ]),
+      categorySlug: 'ai',
+      tagSlugs: ['ai', 'machine-learning'],
+      authorUsername: 'kaiwen',
+      published: true,
+      views: 3567,
+      coverImage: coverImages.ai[0],
+    },
+    // 42
+    {
+      title: 'LangChain 快速上手',
+      slug: 'langchain-quickstart',
+      excerpt: '用 LangChain 构建你的第一个 LLM 应用。',
+      content: createPostMarkdown('LangChain 快速上手', [
+        { h2: '核心概念', bullets: ['Chain：将多个调用串联起来','Agent：让模型自主决策使用工具','Memory：在多轮对话中保持上下文'] },
+        { h2: '快速上手', bullets: ['安装 langchain 和 OpenAI 集成包','实现一个简单的问答链'] },
+        { h2: '工具集成', bullets: ['接入搜索引擎、数据库、外部 API'] },
+        { h2: '局限性', bullets: ['复杂链路的调试较困难','版本更新快，文档有时滞后'] },
+      ]),
+      categorySlug: 'ai',
+      tagSlugs: ['ai', 'python'],
+      authorUsername: 'kaiwen',
+      published: true,
+      views: 2890,
+      coverImage: coverImages.ai[1],
+    },
+    // 43
+    {
+      title: '用 Python 做数据可视化',
+      slug: 'python-data-visualization',
+      excerpt: '从 Matplotlib 到 Plotly，掌握 Python 数据可视化的核心工具。',
+      content: createPostMarkdown('用 Python 做数据可视化', [
+        { h2: 'Matplotlib 基础', bullets: ['折线图、柱状图、散点图','自定义样式和主题'] },
+        { h2: 'Seaborn 进阶', bullets: ['统计图表、热力图、分布图','与 Pandas DataFrame 无缝集成'] },
+        { h2: 'Plotly 交互', bullets: ['网页端可交互图表','支持悬停、缩放、筛选'] },
+        { h2: '实战项目', bullets: ['销售数据分析仪表板','用户行为漏斗可视化'] },
+      ]),
+      categorySlug: 'ai',
+      tagSlugs: ['python', 'machine-learning'],
+      authorUsername: 'kaiwen',
+      published: true,
+      views: 2345,
+      coverImage: coverImages.ai[2],
+    },
+  ]
+
+  // ==================== Insert Posts ====================
+  let postsCreated = 0
+  const createdPosts: { id: string; slug: string; published: boolean }[] = []
+
+  for (const pd of postDefinitions) {
+    const existing = await db.query.posts.findFirst({
+      where: (p, { eq }) => eq(p.slug, pd.slug),
+    })
+
+    if (!existing) {
+      const author = allUsers.find((u) => u.username === pd.authorUsername) || adminUser
+      const [post] = await db.insert(posts).values({
+        title: pd.title,
+        slug: pd.slug,
+        excerpt: pd.excerpt,
+        content: pd.content,
+        coverImage: pd.coverImage,
+        published: pd.published,
+        featured: Math.random() < 0.15,
+        views: pd.views,
+        likesCount: 0,
+        commentsCount: 0,
+        readingTime: estimateReadingTime(pd.content),
+        authorId: author!.id,
+        categoryId: getCatId(pd.categorySlug),
+        publishedAt: pd.published
+          ? new Date(Date.now() - Math.random() * 1000 * 60 * 60 * 24 * 365)
+          : null,
+      }).returning()
+
+      createdPosts.push(post)
+
+      const tagIds = getTagIds(pd.tagSlugs)
+      if (tagIds.length > 0) {
+        await db.insert(postsToTags).values(
+          tagIds.map((id) => ({ postId: post.id, tagId: id }))
+        )
+      }
+      postsCreated++
+    } else {
+      createdPosts.push(existing)
+    }
+  }
+  console.log(`✅ ${postsCreated} posts created`)
+
+  // ==================== Social Data ====================
+  const publishedPosts = createdPosts.filter((p) => p.published)
+  const commentPool = [
+    '写得太好了，受益匪浅！',
+    '刚好在学习这个，收藏了。',
+    '第三节讲得很透彻，解决了我的困惑。',
+    '实践了一下，确实很有帮助。',
+    '期待下一篇！',
+    '这篇文章解决了我困扰很久的问题。',
+    '可以分享一下源码或 demo 吗？',
+    '总结得很到位，转给同事看看。',
+    '收藏了，回头慢慢看。',
+    '作者能不能再深入讲讲性能优化部分？',
+    '有点不同意见，欢迎讨论。',
+    '小白问一句，这个和 XXX 有什么区别？',
+    '已经应用到项目里了，效果拔群！',
+    '配图很有设计感，求出处。',
+    '翻译质量很高，原文出处是？',
+  ]
+
+  const replyPool = [
+    '谢谢支持！',
+    '源码在 GitHub 上，欢迎 star。',
+    '同意，这也是我实践下来的感受。',
+    '关于性能优化，我会再写一篇详细讲。',
+    '有问题随时交流！',
+    '很高兴对你有帮助。',
+  ]
+
+  let commentsCreated = 0
+  for (const post of publishedPosts) {
+    const numComments = Math.floor(Math.random() * 6)
+    for (let i = 0; i < numComments; i++) {
+      const author = allUsers[Math.floor(Math.random() * allUsers.length)]
+      const commentResult = await db.insert(comments).values({
+        content: commentPool[Math.floor(Math.random() * commentPool.length)],
+        authorId: author.id,
+        postId: post.id,
+        parentId: null,
+      }).returning()
+      const comment = (commentResult as { id: string }[])[0]
+      commentsCreated++
+
+      if (Math.random() < 0.35) {
+        const replyAuthor = allUsers[Math.floor(Math.random() * allUsers.length)]
+        await db.insert(comments).values({
+          content: replyPool[Math.floor(Math.random() * replyPool.length)],
+          authorId: replyAuthor.id,
+          postId: post.id,
+          parentId: comment.id,
+        })
+        commentsCreated++
+      }
+    }
+  }
+  console.log(`✅ ${commentsCreated} comments created`)
+
+  let likesCreated = 0
+  for (const post of publishedPosts) {
+    const numLikes = Math.floor(Math.random() * 36) + 5
+    const shuffled = [...allUsers].sort(() => 0.5 - Math.random())
+    for (let i = 0; i < Math.min(numLikes, shuffled.length); i++) {
+      const result = await db.insert(likes).values({
+        userId: shuffled[i].id,
+        postId: post.id,
+      }).onConflictDoNothing()
+      if (result.rowCount && result.rowCount > 0) likesCreated++
+    }
+  }
+  console.log(`✅ ${likesCreated} likes created`)
+
+  let bookmarksCreated = 0
+  for (const post of publishedPosts) {
+    const numBookmarks = Math.floor(Math.random() * 9)
+    const shuffled = [...allUsers].sort(() => 0.5 - Math.random())
+    for (let i = 0; i < Math.min(numBookmarks, shuffled.length); i++) {
+      const result = await db.insert(bookmarks).values({
+        userId: shuffled[i].id,
+        postId: post.id,
+      }).onConflictDoNothing()
+      if (result.rowCount && result.rowCount > 0) bookmarksCreated++
+    }
+  }
+  console.log(`✅ ${bookmarksCreated} bookmarks created`)
+
+  let followsCreated = 0
+  for (const u of allUsers) {
+    const numFollows = Math.floor(Math.random() * 5) + 1
+    const targets = allUsers.filter((x) => x.id !== u.id).sort(() => 0.5 - Math.random()).slice(0, numFollows)
+    for (const t of targets) {
+      const result = await db.insert(follows).values({
+        followerId: u.id,
+        followingId: t.id,
+      }).onConflictDoNothing()
+      if (result.rowCount && result.rowCount > 0) followsCreated++
+    }
+  }
+  console.log(`✅ ${followsCreated} follows created`)
+
+  // Comment likes
+  const allComments = await db.query.comments.findMany()
+  let commentLikesCreated = 0
+  for (const comment of allComments) {
+    const num = Math.floor(Math.random() * 6)
+    const shuffled = [...allUsers].sort(() => 0.5 - Math.random())
+    for (let i = 0; i < Math.min(num, shuffled.length); i++) {
+      const result = await db.insert(commentLikes).values({
+        userId: shuffled[i].id,
+        commentId: comment.id,
+      }).onConflictDoNothing()
+      if (result.rowCount && result.rowCount > 0) commentLikesCreated++
+    }
+  }
+  console.log(`✅ ${commentLikesCreated} comment likes created`)
+
+  // Sync counts: posts.likesCount, posts.commentsCount, comments.likesCount
+  await db.execute(`
+    UPDATE posts
+    SET likes_count = (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id)
+  `)
+
+  await db.execute(`
+    UPDATE posts
+    SET comments_count = (SELECT COUNT(*) FROM comments WHERE comments.post_id = posts.id)
+  `)
+
+  await db.execute(`
+    UPDATE comments
+    SET likes_count = (SELECT COUNT(*) FROM comment_likes WHERE comment_likes.comment_id = comments.id)
+  `)
+
+  console.log('✅ Synced like/comment counts')
+
+  console.log('🎉 Seed completed!')
 }
 
-seed()
+seed().catch((e) => {
+  console.error('❌ Seed failed:', e)
+  process.exit(1)
+}).finally(() => {
+  pool.end()
+})
