@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { siteConfig } from '@/config/site'
+import { typography } from '@/lib/constants'
 
 export function Footer() {
   // Use a static year to avoid prerender issues
@@ -12,7 +13,7 @@ export function Footer() {
           {/* Brand */}
           <div className="space-y-3">
             <h3 className="text-lg font-semibold">{siteConfig.name}</h3>
-            <p className="text-sm text-muted-foreground">
+            <p className={typography.muted}>
               {siteConfig.description}
             </p>
           </div>
@@ -90,10 +91,10 @@ export function Footer() {
         </div>
 
         <div className="mt-8 pt-8 border-t flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-muted-foreground">
+          <p className={typography.muted}>
             &copy; {year} {siteConfig.name}. All rights reserved.
           </p>
-          <p className="text-sm text-muted-foreground">
+          <p className={typography.muted}>
             Built with Next.js 16 & Tailwind CSS
           </p>
         </div>

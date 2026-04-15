@@ -4,6 +4,7 @@ import { Bookmark } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { usePostInteractions } from '@/lib/hooks/use-post-interactions'
 import { cn } from '@/lib/utils'
+import { sizes } from '@/lib/constants'
 
 interface BookmarkButtonProps {
   postId: string
@@ -31,7 +32,7 @@ export function BookmarkButton({ postId, initialBookmarked }: BookmarkButtonProp
     >
       <Bookmark
         className={cn(
-          'mr-2 h-4 w-4 transition-colors',
+          sizes.iconWithText + ' transition-colors',
           bookmarked && 'fill-yellow-500 text-yellow-500'
         )}
       />

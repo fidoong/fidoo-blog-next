@@ -3,7 +3,8 @@
 import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { formatDate } from '@/lib/utils'
+import { formatDate, cn } from '@/lib/utils'
+import { typography } from '@/lib/constants'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Calendar, Eye, Heart } from 'lucide-react'
 import type { PostSummary } from '@/types/models'
@@ -38,7 +39,7 @@ export function PostCard({ post }: PostCardProps) {
               </h2>
             </Link>
             {post.excerpt && (
-              <p className="text-sm text-muted-foreground line-clamp-1">
+              <p className={cn(typography.muted, "line-clamp-1")}>
                 {post.excerpt}
               </p>
             )}

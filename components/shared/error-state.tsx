@@ -1,6 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { AlertCircle, RefreshCw } from 'lucide-react'
+import { sizes } from '@/lib/constants'
 
 export interface ErrorStateProps {
   error: string
@@ -17,7 +18,7 @@ export function ErrorState({ error, onRetry, className }: ErrorStateProps) {
         <p className="text-muted-foreground mb-4">{error}</p>
         {onRetry && (
           <Button onClick={onRetry} variant="outline">
-            <RefreshCw className="mr-2 h-4 w-4" />
+            <RefreshCw className={sizes.iconWithText} />
             重试
           </Button>
         )}

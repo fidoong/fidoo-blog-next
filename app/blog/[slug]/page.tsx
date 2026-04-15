@@ -11,7 +11,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Calendar, Eye, Clock, Share2 } from 'lucide-react'
-import { formatDate } from '@/lib/utils'
+import { formatDate, cn } from '@/lib/utils'
+import { layout, sizes, typography } from '@/lib/constants'
 import { EditorPreview } from '@/components/editor'
 import { ViewTracker } from '@/components/features/post/view-tracker'
 import { LikeButton } from '@/components/features/post/like-button'
@@ -115,7 +116,7 @@ export default async function PostPage({ params }: PostPageProps) {
                 <p className="text-lg text-muted-foreground">{post.excerpt}</p>
               )}
 
-              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+              <div className={cn("flex flex-wrap", layout.flexGapLarge, typography.muted)}>
                 <div className="flex items-center gap-2">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={post.author.avatar || ''} />
@@ -162,7 +163,7 @@ export default async function PostPage({ params }: PostPageProps) {
             <Separator className="my-8" />
 
             {/* Footer Actions */}
-            <div className="flex items-center justify-between">
+            <div className={layout.flexBetween}>
               <div className="flex items-center gap-2">
                 <LikeButton
                   postId={post.id}
@@ -174,7 +175,7 @@ export default async function PostPage({ params }: PostPageProps) {
                   initialBookmarked={hasBookmarked}
                 />
                 <Button variant="outline" size="sm">
-                  <Share2 className="mr-2 h-4 w-4" />
+                  <Share2 className={sizes.iconWithText} />
                   分享
                 </Button>
               </div>
@@ -210,7 +211,7 @@ export default async function PostPage({ params }: PostPageProps) {
                     {post.author.name || post.author.username}
                   </h3>
                   {post.author.bio && (
-                    <p className="text-sm text-muted-foreground line-clamp-2">
+                    <p className={cn(typography.muted, "line-clamp-2")}>
                       {post.author.bio}
                     </p>
                   )}

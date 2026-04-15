@@ -6,7 +6,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Calendar, Eye, ArrowLeft } from 'lucide-react'
-import { formatDate } from '@/lib/utils'
+import { formatDate, cn } from '@/lib/utils'
+import { sizes, layout, typography } from '@/lib/constants'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/shared/empty-state'
 
@@ -46,7 +47,7 @@ export default async function TagPage({ params }: TagPageProps) {
         {/* Back Button */}
         <Link href="/tags">
           <Button variant="ghost" className="mb-6 -ml-4">
-            <ArrowLeft className="mr-2 h-4 w-4" />
+            <ArrowLeft className={sizes.iconWithText} />
             返回标签列表
           </Button>
         </Link>
@@ -57,7 +58,7 @@ export default async function TagPage({ params }: TagPageProps) {
           {tag.description && (
             <p className="text-muted-foreground">{tag.description}</p>
           )}
-          <p className="text-sm text-muted-foreground mt-2">
+          <p className={cn(typography.muted, "mt-2")}>
             共 {total} 篇文章
           </p>
         </div>
@@ -84,7 +85,7 @@ export default async function TagPage({ params }: TagPageProps) {
                             {post.excerpt}
                           </p>
                         )}
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <div className={cn(layout.flexGapLarge, typography.muted)}>
                           <div className="flex items-center gap-2">
                             <Avatar className="h-5 w-5">
                               <AvatarImage src={post.author.avatar || ''} />

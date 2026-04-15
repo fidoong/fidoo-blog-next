@@ -28,6 +28,8 @@ import { useUIStore } from '@/lib/stores/ui-store'
 import { siteConfig } from '@/config/site'
 import { navConfig } from '@/config/nav'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
+import { sizes, typography } from '@/lib/constants'
 
 export function Header() {
   const router = useRouter()
@@ -98,7 +100,7 @@ export function Header() {
                   size="sm"
                   className="hidden sm:flex bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-sm"
                 >
-                  <PenLine className="mr-2 h-4 w-4" />
+                  <PenLine className={sizes.iconWithText} />
                   写文章
                 </Button>
                 <Button 
@@ -125,26 +127,26 @@ export function Header() {
                   <div className="flex items-center justify-start gap-2 p-2">
                     <div className="flex flex-col space-y-1 leading-none">
                       <p className="font-medium">{session.user.name}</p>
-                      <p className="w-[200px] truncate text-sm text-muted-foreground">
+                      <p className={cn("w-[200px] truncate", typography.muted)}>
                         {session.user.email}
                       </p>
                     </div>
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => router.push(`/u/${session.user.username}`)}>
-                    <User className="mr-2 h-4 w-4" />
+                    <User className={sizes.iconWithText} />
                     个人主页
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => router.push('/write')}>
-                    <PenLine className="mr-2 h-4 w-4" />
+                    <PenLine className={sizes.iconWithText} />
                     写文章
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => router.push('/dashboard')}>
-                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                    <LayoutDashboard className={sizes.iconWithText} />
                     我的文章
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => router.push('/settings')}>
-                    <Settings className="mr-2 h-4 w-4" />
+                    <Settings className={sizes.iconWithText} />
                     设置
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -152,7 +154,7 @@ export function Header() {
                     className="cursor-pointer text-muted-foreground transition-colors hover:text-destructive focus:text-destructive"
                     onClick={handleLogoutClick}
                   >
-                    <LogOut className="mr-2 h-4 w-4" />
+                    <LogOut className={sizes.iconWithText} />
                     退出登录
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -192,12 +194,12 @@ export function Header() {
             >
               {isLoggingOut ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className={cn(sizes.iconWithText, "animate-spin")} />
                   退出中...
                 </>
               ) : (
                 <>
-                  <LogOut className="mr-2 h-4 w-4" />
+                  <LogOut className={sizes.iconWithText} />
                   确认退出
                 </>
               )}

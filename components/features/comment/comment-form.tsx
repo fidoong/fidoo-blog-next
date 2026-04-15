@@ -5,6 +5,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form'
 import { Loader2 } from 'lucide-react'
 import { useCommentForm } from '@/lib/hooks/use-comment-form'
+import { cn } from '@/lib/utils'
+import { sizes } from '@/lib/constants'
 
 interface CommentFormProps {
   postId: string
@@ -53,7 +55,7 @@ export function CommentForm({
             </Button>
           )}
           <Button type="submit" size="sm" disabled={isPending}>
-            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isPending && <Loader2 className={cn(sizes.iconWithText, "animate-spin")} />}
             {parentId ? '回复' : '发布评论'}
           </Button>
         </div>

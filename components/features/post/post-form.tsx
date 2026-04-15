@@ -22,6 +22,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import type { Category, Tag } from '@/types/models'
 import { Loader2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { sizes } from '@/lib/constants'
 import { useCreatePost, useUpdatePost } from '@/lib/hooks/use-post-mutations'
 
 interface PostFormProps {
@@ -270,7 +272,7 @@ export function PostForm({ post, categories, allTags }: PostFormProps) {
             取消
           </Button>
           <Button type="submit" disabled={isPending}>
-            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isPending && <Loader2 className={cn(sizes.iconWithText, "animate-spin")} />}
             {post ? '更新文章' : '创建文章'}
           </Button>
         </div>

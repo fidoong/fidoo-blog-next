@@ -9,6 +9,8 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertCircle, Loader2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { sizes } from '@/lib/constants'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -112,7 +114,7 @@ export default function RegisterPage() {
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className={cn(sizes.iconWithText, "animate-spin")} />
                   注册中...
                 </>
               ) : (

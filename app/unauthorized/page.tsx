@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Shield, PenLine, ArrowLeft, Mail } from 'lucide-react'
+import { sizes, typography } from '@/lib/constants'
 
 export const metadata = {
   title: '权限不足',
@@ -26,7 +27,7 @@ export default function UnauthorizedPage() {
               <PenLine className="h-5 w-5 text-primary mt-0.5" />
               <div>
                 <p className="font-medium text-sm">作者权限说明</p>
-                <p className="text-sm text-muted-foreground">
+                <p className={typography.muted}>
                   成为作者后，您可以发布文章、管理自己的内容，并参与社区内容建设。
                 </p>
               </div>
@@ -38,12 +39,12 @@ export default function UnauthorizedPage() {
             href="mailto:admin@example.com?subject=申请成为作者"
             className="w-full inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
           >
-            <Mail className="mr-2 h-4 w-4" />
+            <Mail className={sizes.iconWithText} />
             申请成为作者
           </a>
           <Link href="/" className="w-full">
             <Button variant="outline" className="w-full">
-              <ArrowLeft className="mr-2 h-4 w-4" />
+              <ArrowLeft className={sizes.iconWithText} />
               返回首页
             </Button>
           </Link>

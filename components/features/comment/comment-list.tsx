@@ -5,6 +5,7 @@ import { CommentItem } from './comment-item'
 import { CommentForm } from './comment-form'
 import { Button } from '@/components/ui/button'
 import { MessageSquare } from 'lucide-react'
+import { layout } from '@/lib/constants'
 import type { BlogComment } from '@/types/comments'
 
 interface CommentListProps {
@@ -20,7 +21,7 @@ export function CommentList({ postId, comments, currentUserId, commentsCount, li
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className={layout.flexBetween}>
         <h3 className="text-lg font-semibold flex items-center gap-2">
           <MessageSquare className="h-5 w-5" />
           评论 ({commentsCount})

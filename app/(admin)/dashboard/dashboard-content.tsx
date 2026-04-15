@@ -16,6 +16,8 @@ import {
 import { transformAdminPostListItem } from '@/types/transformers'
 import type { AdminPostListItem } from '@/types/models'
 import { EmptyState } from '@/components/shared/empty-state'
+import { cn } from '@/lib/utils'
+import { layout, sizes, typography } from '@/lib/constants'
 
 async function getDashboardStats(userId: string) {
   const [postStats] = await db
@@ -57,12 +59,12 @@ export async function DashboardContent() {
   const stats = await getDashboardStats(session!.user.id)
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className={cn(layout.flexCol, 'space-y-6')}>
+      <div className={layout.flexBetween}>
         <h1 className="page-title">仪表盘</h1>
         <Link href="/write">
           <Button>
-            <FileText className="mr-2 h-4 w-4" />
+            <FileText className={sizes.iconWithText} />
             写文章
           </Button>
         </Link>
@@ -71,7 +73,7 @@ export async function DashboardContent() {
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className={cn("flex flex-row space-y-0 pb-2", layout.flexBetween)}>
             <CardTitle className="text-sm font-medium">总文章数</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -84,7 +86,7 @@ export async function DashboardContent() {
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className={cn("flex flex-row space-y-0 pb-2", layout.flexBetween)}>
             <CardTitle className="text-sm font-medium">总阅读量</CardTitle>
             <Eye className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -98,7 +100,7 @@ export async function DashboardContent() {
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className={cn("flex flex-row space-y-0 pb-2", layout.flexBetween)}>
             <CardTitle className="text-sm font-medium">评论数</CardTitle>
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -109,7 +111,7 @@ export async function DashboardContent() {
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className={cn("flex flex-row space-y-0 pb-2", layout.flexBetween)}>
             <CardTitle className="text-sm font-medium">点赞数</CardTitle>
             <Heart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -122,7 +124,7 @@ export async function DashboardContent() {
 
       {/* Recent Posts */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className={cn("flex flex-row", layout.flexBetween)}>
           <CardTitle>最近文章</CardTitle>
           <Link href="/posts">
             <Button variant="ghost" size="sm">
@@ -139,7 +141,7 @@ export async function DashboardContent() {
               action={
                 <Link href="/write">
                   <Button variant="outline">
-                    <FileText className="mr-2 h-4 w-4" />
+                    <FileText className={sizes.iconWithText} />
                     开始创作
                   </Button>
                 </Link>
@@ -150,7 +152,7 @@ export async function DashboardContent() {
               {stats.recentPosts.map((post) => (
                 <div
                   key={post.id}
-                  className="flex items-center justify-between border-b last:border-0 pb-4 last:pb-0"
+                  className={cn(layout.flexBetween, "border-b last:border-0 pb-4 last:pb-0")}
                 >
                   <div>
                     <Link
@@ -159,7 +161,7 @@ export async function DashboardContent() {
                     >
                       {post.title}
                     </Link>
-                    <p className="text-sm text-muted-foreground">
+                    <p className={typography.muted}>
                       {post.category.name ?? '-'} · {post.views} 阅读 ·{' '}
                       {post.published ? '已发布' : '草稿'}
                     </p>

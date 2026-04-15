@@ -8,7 +8,8 @@ import { siteConfig } from '@/config/site'
 import { getPosts } from '@/lib/actions/posts'
 import { Calendar, Eye } from 'lucide-react'
 import { EmptyState } from '@/components/shared/empty-state'
-import { formatDate } from '@/lib/utils'
+import { formatDate, cn } from '@/lib/utils'
+import { layout, typography } from '@/lib/constants'
 
 export default async function HomePage() {
   const { posts } = await getPosts({ page: 1, limit: 6 })
@@ -79,7 +80,7 @@ export default async function HomePage() {
       {/* Latest Posts Section */}
       <section className="py-20">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-8">
+          <div className={cn(layout.flexBetween, 'mb-8')}>
             <h2 className="text-3xl font-bold">最新文章</h2>
             <Link href="/blog">
               <Button variant="ghost">
@@ -109,7 +110,7 @@ export default async function HomePage() {
                       </div>
                     )}
                     <CardContent className="p-6">
-                      <div className="flex items-center gap-2 mb-3">
+                      <div className={cn(layout.flexGap, 'mb-3')}>
                         <Badge variant="secondary" className="text-xs">
                           {post.category.name ?? '-'}
                         </Badge>
@@ -127,8 +128,8 @@ export default async function HomePage() {
                           {post.excerpt}
                         </p>
                       )}
-                      <div className="flex items-center justify-between text-sm text-muted-foreground">
-                        <div className="flex items-center gap-2">
+                      <div className={cn(layout.flexBetween, typography.muted)}>
+                        <div className={layout.flexGap}>
                           <Avatar className="h-5 w-5">
                             <AvatarImage src={post.author.avatar || ''} />
                             <AvatarFallback className="text-xs">

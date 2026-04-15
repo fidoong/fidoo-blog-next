@@ -18,7 +18,8 @@ import { deletePost } from '@/lib/actions/posts'
 import { transformAdminPostListItem } from '@/types/transformers'
 import type { AdminPostListItem } from '@/types/models'
 import { EmptyState } from '@/components/shared/empty-state'
-import { formatDate } from '@/lib/utils'
+import { formatDate, cn } from '@/lib/utils'
+import { layout, sizes } from '@/lib/constants'
 
 async function getUserPosts(userId: string): Promise<AdminPostListItem[]> {
   const rawPosts = await db.query.posts.findMany({
@@ -37,12 +38,12 @@ export async function PostsContent() {
   const postsList = await getUserPosts(session!.user.id)
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className={cn(layout.flexCol, 'space-y-6')}>
+      <div className={layout.flexBetween}>
         <h1 className="page-title">文章管理</h1>
         <Link href="/write">
           <Button>
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className={sizes.iconWithText} />
             新建文章
           </Button>
         </Link>
@@ -70,7 +71,7 @@ export async function PostsContent() {
                     action={
                       <Link href="/write">
                         <Button variant="outline">
-                          <Plus className="mr-2 h-4 w-4" />
+                          <Plus className={sizes.iconWithText} />
                           开始创作
                         </Button>
                       </Link>

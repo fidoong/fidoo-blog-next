@@ -4,6 +4,7 @@ import { Heart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { usePostInteractions } from '@/lib/hooks/use-post-interactions'
 import { cn } from '@/lib/utils'
+import { sizes } from '@/lib/constants'
 
 interface LikeButtonProps {
   postId: string
@@ -32,7 +33,7 @@ export function LikeButton({ postId, initialLiked, initialCount }: LikeButtonPro
     >
       <Heart
         className={cn(
-          'mr-2 h-4 w-4 transition-colors',
+          sizes.iconWithText + ' transition-colors',
           liked && 'fill-red-500 text-red-500'
         )}
       />

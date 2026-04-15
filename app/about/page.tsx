@@ -2,6 +2,8 @@ import { siteConfig } from '@/config/site'
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Mail, Heart, Code, Coffee } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { typography } from '@/lib/constants'
 
 export const metadata = {
   title: `关于 | ${siteConfig.name}`,
@@ -43,7 +45,7 @@ export default function AboutPage() {
               <CardContent className="p-6 text-center">
                 <Code className="h-8 w-8 mx-auto mb-3 text-primary" />
                 <h3 className="font-semibold mb-2">技术文章</h3>
-                <p className="text-sm text-muted-foreground">
+                <p className={typography.muted}>
                   精心撰写的技术教程和最佳实践
                 </p>
               </CardContent>
@@ -52,7 +54,7 @@ export default function AboutPage() {
               <CardContent className="p-6 text-center">
                 <Heart className="h-8 w-8 mx-auto mb-3 text-red-500" />
                 <h3 className="font-semibold mb-2">活跃社区</h3>
-                <p className="text-sm text-muted-foreground">
+                <p className={typography.muted}>
                   与志同道合的开发者交流讨论
                 </p>
               </CardContent>
@@ -61,7 +63,7 @@ export default function AboutPage() {
               <CardContent className="p-6 text-center">
                 <Coffee className="h-8 w-8 mx-auto mb-3 text-amber-500" />
                 <h3 className="font-semibold mb-2">持续更新</h3>
-                <p className="text-sm text-muted-foreground">
+                <p className={typography.muted}>
                   紧跟技术潮流，不断学习进步
                 </p>
               </CardContent>
@@ -134,7 +136,7 @@ export default function AboutPage() {
         <Separator className="my-12" />
 
         {/* Footer */}
-        <div className="text-center text-sm text-muted-foreground">
+        <div className={cn("text-center", typography.muted)}>
           <p>© {new Date().getFullYear()} {siteConfig.name}. All rights reserved.</p>
           <p className="mt-2">Made with ❤️ by {siteConfig.author.name}</p>
         </div>

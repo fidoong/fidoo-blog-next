@@ -8,6 +8,7 @@ import { CommentForm } from './comment-form'
 import { deleteComment, toggleCommentLike } from '@/lib/actions/comments'
 import { Heart, MessageCircle, Trash2 } from 'lucide-react'
 import { cn, formatRelativeTime, handleError, isUnauthorizedError } from '@/lib/utils'
+import { typography } from '@/lib/constants'
 import type { BlogComment } from '@/types/comments'
 
 interface CommentItemProps {
@@ -61,7 +62,7 @@ export function CommentItem({ comment, currentUserId, depth = 0, likedCommentIds
 
   if (isDeleted) {
     return (
-      <div className="py-4 text-sm text-muted-foreground italic">
+      <div className={cn("py-4 italic", typography.muted)}>
         该评论已被删除
       </div>
     )
